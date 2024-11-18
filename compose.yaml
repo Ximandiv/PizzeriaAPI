@@ -1,0 +1,52 @@
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker Compose reference guide at
+# https://docs.docker.com/go/compose-spec-reference/
+
+# Here the instructions define your application as a service called "server".
+# This service is built from the Dockerfile in the current directory.
+# You can add other services your application may depend on here, such as a
+# database or a cache. For examples, see the Awesome Compose repository:
+# https://github.com/docker/awesome-compose
+services:
+  server:
+    build:
+      context: .
+      target: development
+    ports:
+      - 8080:8080
+    depends_on:
+      db:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: .
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: PizzeriaTest # The database name to create
+      MYSQL_USER: PizzaOwner      # The user with access to the database
+      MYSQL_PASSWORD_FILE: /run/secrets/db-password  # The password for the user
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db-password # Root password for MySQL
+    secrets:
+      - db-password
+    volumes:
+      - db-data:/var/lib/mysql  # Data persistence
+    expose:
+      - 3306
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:
+
+secrets:
+  db-password:
+    file: db/password.txt
