@@ -13,8 +13,8 @@ namespace Pizzeria.Migrations
             migrationBuilder.AlterColumn<string>(
                 name: "Phone",
                 table: "Users",
-                type: "varchar(13)",
-                maxLength: 13,
+                type: "varchar(20)",
+                maxLength: 20,
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "varchar(64)",
@@ -39,7 +39,7 @@ namespace Pizzeria.Migrations
                 table: "Users",
                 type: "varchar(64)",
                 maxLength: 64,
-                nullable: false,
+                nullable: true,
                 defaultValue: "")
                 .Annotation("MySql:CharSet", "utf8mb4");
         }

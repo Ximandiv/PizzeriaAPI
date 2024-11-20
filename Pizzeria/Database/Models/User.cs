@@ -17,7 +17,7 @@ public class User
     public required string Email { get; set; }
     
     [Required]
-    [StringLength(13)]
+    [StringLength(20)]
     [MinLength(10)]
     public required string Phone { get; set; }
     
@@ -26,7 +26,6 @@ public class User
     [MinLength(8)]
     public required string Address { get; set; }
     
-    [Required]
     [StringLength(64)]
-    public required string RememberMeToken { get; set; }
+    public string? RememberMeToken { get; set; }
 }
