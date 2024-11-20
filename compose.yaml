@@ -11,7 +11,7 @@ services:
   server:
     build:
       context: .
-      target: development
+      dockerfile: Dockerfile
     ports:
       - 8080:8080
     depends_on:
@@ -23,7 +23,7 @@ services:
           path: .
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_URLS=http://+:8080
   db:
     image: mysql:8.0
     restart: always
