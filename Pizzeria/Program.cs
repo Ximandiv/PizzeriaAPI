@@ -1,15 +1,16 @@
 using Microsoft.EntityFrameworkCore;
+using Pizzeria;
 using Pizzeria.Database;
 using Pizzeria.Database.Seeders;
+using Pizzeria.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Configuration.AddUserSecrets<Program>();
+
 var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
 
-var connectionString = builder.Configuration.GetConnectionString
-    (
-        environment == "Development" ? "TestConnection" : "DefaultConnection"
-    );
+var connectionString = builder.Configuration["my_secret"] ?? builder.Configuration["AppSettings:TestConnection"];
 
 builder.Services.AddDbContext<PizzeriaContext>(options =>
 {
@@ -19,6 +20,8 @@ builder.Services.AddDbContext<PizzeriaContext>(options =>
         ServerVersion.AutoDetect(connectionString)
     );
 });
+
+builder.Services.AddScoped<UserService>();
 
 builder.Services.AddControllers();
 // Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

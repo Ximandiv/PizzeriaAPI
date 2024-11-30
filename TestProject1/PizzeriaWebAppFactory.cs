@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Pizzeria.Database;
+using Pizzeria.Services;
 
 namespace TestProject1;
 
@@ -27,7 +28,7 @@ public class PizzeriaWebAppFactory<TProgram>
             {
                 services.Remove(descriptor);
             }
-            
+
             services.AddDbContext<PizzeriaContext>(options =>
             {
                 options.UseMySql

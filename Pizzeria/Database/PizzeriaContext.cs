@@ -12,5 +12,5 @@ public class PizzeriaContext : DbContext
     public PizzeriaContext()
     { }
     
-    public DbSet<User> Users { get; set; }
+    public virtual DbSet<User> Users { get; set; }
 }
