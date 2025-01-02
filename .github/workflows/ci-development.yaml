@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      ConnectionStrings__DefaultConnection: Server=db;port=3306;database=${{ secrets.DB_TEST_NAME }};user=${{ secrets.DB_TEST_USER }};password=${{ secrets.DB_TEST_PASSWORD }};
+      ConnectionStrings__DefaultConnection: Server=localhost;port=3306;database=${{ secrets.DB_TEST_NAME }};user=root;password=${{ secrets.DB_TEST_PASSWORD }};
     
     services:
-      db:
+      mysql:
         image: mysql:8.0
         ports:
           - 3306:3306
