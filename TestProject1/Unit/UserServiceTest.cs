@@ -1,17 +1,9 @@
 ﻿using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Moq.EntityFrameworkCore;
 using Pizzeria.Database;
 using Pizzeria.Database.Models;
 using Pizzeria.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TestProject1.Unit;
 

@@ -1,8 +1,6 @@
-using Microsoft.EntityFrameworkCore;
-
 namespace Pizzeria.Database.Seeders;
 
-internal class TestContextSeeder(PizzeriaContext context)
+public class TestContextSeeder(PizzeriaContext context)
 {
     public void Seed()
     {

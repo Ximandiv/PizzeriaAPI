@@ -29,7 +29,7 @@ public class UserTest(PizzeriaWebAppFactory<Program> factory)
         int userCount = await context.Users.CountAsync();
 
         listOfUsers.Should().NotBeNull();
-        listOfUsers.Count().Should().Be(userCount);
+        listOfUsers!.Count.Should().Be(userCount);
     }
 
     [Fact]

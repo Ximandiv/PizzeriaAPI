@@ -1,0 +1,62 @@
+name: ci-development
+
+on:
+  push:
+    branches: [ "development" ]
+  pull_request:
+    branches: [ "development", "master" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    env:
+      ConnectionStrings__DefaultConnection: Server=db;port=3306;database=${{ secrets.DB_TEST_NAME }};user=${{ secrets.DB_TEST_USER }};password=${{ secrets.DB_TEST_PASSWORD }};
+
+    services:
+      db:
+        image: mysql:8.0
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_DATABASE: ${{ secrets.DB_TEST_NAME }}
+          MYSQL_USER: ${{ secrets.DB_TEST_USER }}
+          MYSQL_PASSWORD: ${{ secrets.DB_TEST_PASSWORD }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.DB_TEST_PASSWORD }}
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore
+
+    - name: Wait for MySQL
+      run: |
+        for i in {1..30}; do
+          nc -zv localhost 3306 && break
+          echo "Waiting for database..."
+          sleep 2
+        done
+
+    - name: Test
+      run: dotnet test --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+      
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: Test Results
+        path: '**/*.trx'

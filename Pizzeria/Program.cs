@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Pizzeria;
 using Pizzeria.Database;
 using Pizzeria.Database.Seeders;
 using Pizzeria.Services;
