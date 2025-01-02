@@ -20,6 +20,7 @@ public class PizzeriaWebAppFactory<TProgram>
         _client = CreateClient();
     }
     
+    //This comment is only to trigger the CI and verify
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureServices(services =>
