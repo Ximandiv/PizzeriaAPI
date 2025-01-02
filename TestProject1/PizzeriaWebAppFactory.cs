@@ -43,8 +43,8 @@ public class PizzeriaWebAppFactory<TProgram>
                     if(!_dbInitialized)
                     {
                         var connectionString = Configuration.GetConnectionString("DefaultConnection")
-                                ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-                                ?? throw new InvalidOperationException("Connection string not configured");
+                            ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                            ?? throw new InvalidOperationException("Connection string not configured");
                         services.AddDbContext<PizzeriaContext>(options =>
                         {
                             options.UseMySql
@@ -60,7 +60,22 @@ public class PizzeriaWebAppFactory<TProgram>
                             using (var scope = serviceProvider.CreateScope())
                             {
                                 var dbContext = scope.ServiceProvider.GetRequiredService<PizzeriaContext>();
-                                dbContext.Database.Migrate();
+                                int maxRetries = 5;
+                                for (int attempt = 1; attempt <= maxRetries; attempt++)
+                                {
+                                    try
+                                    {
+                                        dbContext.Database.Migrate();
+                                        break;
+                                    }
+                                    catch (Exception)
+                                    {
+                                        if (attempt == maxRetries)
+                                            throw;
+                                        Console.WriteLine($"Attempt {attempt} failed, retrying...");
+                                        Thread.Sleep(5000);
+                                    }
+                                }
 
                                 TestContextSeeder testSeeder = new TestContextSeeder(dbContext);
                                 testSeeder.Seed();

@@ -12,7 +12,7 @@ jobs:
 
     env:
       ConnectionStrings__DefaultConnection: Server=db;port=3306;database=${{ secrets.DB_TEST_NAME }};user=${{ secrets.DB_TEST_USER }};password=${{ secrets.DB_TEST_PASSWORD }};
-
+    
     services:
       db:
         image: mysql:8.0
@@ -46,9 +46,9 @@ jobs:
     - name: Wait for MySQL
       run: |
         for i in {1..30}; do
-          nc -zv localhost 3306 && break
+          mysqladmin ping -h localhost --silent && break
           echo "Waiting for database..."
-          sleep 2
+          sleep 5
         done
 
     - name: Test
