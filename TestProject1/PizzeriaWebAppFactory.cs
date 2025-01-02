@@ -46,7 +46,6 @@ public class PizzeriaWebAppFactory<TProgram>
                             ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
                             ?? throw new InvalidOperationException("Connection string not configured");
 
-                        Console.WriteLine(connectionString);
                         services.AddDbContext<PizzeriaContext>(options =>
                         {
                             options.UseMySql

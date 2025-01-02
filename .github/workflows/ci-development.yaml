@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "development" ]
   pull_request:
-    branches: [ "development", "master" ]
+    branches: [ "master" ]
 
 jobs:
   build-and-test:
@@ -17,7 +17,7 @@ jobs:
       db:
         image: mysql:8.0
         ports:
-          - 3306:3306
+          - 3307:3306
         env:
           MYSQL_DATABASE: ${{ secrets.DB_TEST_NAME }}
           MYSQL_USER: ${{ secrets.DB_TEST_USER }}
