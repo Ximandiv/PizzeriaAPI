@@ -24,9 +24,9 @@ jobs:
           MYSQL_PASSWORD: ${{ secrets.DB_TEST_PASSWORD }}
           MYSQL_ROOT_PASSWORD: ${{ secrets.DB_TEST_PASSWORD }}
         options: >-
-          --health-cmd="mysqladmin ping -h localhost"
+          --health-cmd="mysqladmin ping -h db"
           --health-interval=10s
-          --health-timeout=5s
+          --health-timeout=10s
           --health-retries=3
 
     steps:
