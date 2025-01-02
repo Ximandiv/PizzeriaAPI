@@ -7,3 +7,4 @@ riderModule.iml
 Pizzeria.sln.DotSettings.user
 db/
 .vs/
+.env

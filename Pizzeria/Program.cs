@@ -12,6 +12,8 @@ var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
 
 var connectionString = builder.Configuration["my_secret"] ?? builder.Configuration["AppSettings:TestConnection"];
 
+Console.WriteLine($"Connection:{connectionString}");
+
 builder.Services.AddDbContext<PizzeriaContext>(options =>
 {
     options.UseMySql
