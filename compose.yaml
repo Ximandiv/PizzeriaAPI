@@ -1,47 +1,34 @@
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Docker Compose reference guide at
-# https://docs.docker.com/go/compose-spec-reference/
-
-# Here the instructions define your application as a service called "server".
-# This service is built from the Dockerfile in the current directory.
-# You can add other services your application may depend on here, such as a
-# database or a cache. For examples, see the Awesome Compose repository:
-# https://github.com/docker/awesome-compose
 services:
-  server:
-    image: pizzeriaapi-server
+  # ASP.NET application container
+  webapp:
+    image: pizzeriaapi-server:latest # The name of your app's image
+    build: .
     ports:
-      - 8080:8080
+      - "5283:8080"  # Expose the app's port
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8080
-    secrets:
-      - my_secret
-  db:
-    image: mysql:8.0
-    restart: always
+      - my_secret=${MY_SECRET}
+    depends_on:
+        mydb:
+            condition: service_healthy
+
+  mydb:
+    image: mysql:8.0  # MySQL Docker image
     environment:
-      MYSQL_DATABASE: PizzeriaTest # The database name to create
-      MYSQL_USER: PizzaOwner      # The user with access to the database
-      MYSQL_PASSWORD_FILE: /run/secrets/my_secret_password  # The password for the user
-      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/my_secret_password # Root password for MySQL
-    secrets:
-      - my_secret_password
+      - MYSQL_ROOT_PASSWORD=${MY_SECRET_PASSWORD}
+      - MYSQL_DATABASE=${MY_SECRET_DB}
+      - MYSQL_USER=${MY_SECRET_USER}
+      - MYSQL_PASSWORD=${MY_SECRET_PASSWORD}
+    ports:
+      - "3307:3306"  # Expose MySQL port
     volumes:
-      - db-data:/var/lib/mysql  # Data persistence
-    expose:
-      - 3306
+      - mysql-data:/var/lib/mysql
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+        test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+        interval: 30s
+        retries: 5
+        start_period: 30s
+        timeout: 10s
 
 volumes:
-  db-data:
-
-secrets:
-  my_secret:
-    external: true
-  my_secret_password:
-    external: true
+  mysql-data:
