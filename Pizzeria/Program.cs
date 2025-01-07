@@ -37,6 +37,8 @@ builder.Services.AddScoped<IMongoDatabase>(serviceProvider =>
     return client!.GetDatabase(settings.Database);
 });
 
+builder.Services.AddScoped<OrdersContext>();
+
 builder.Services.AddScoped<UserService>();
 
 builder.Services.AddControllers();

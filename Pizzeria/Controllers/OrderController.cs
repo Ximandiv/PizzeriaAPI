@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
+using Pizzeria.Database;
 using Pizzeria.Database.Models;
 using Pizzeria.DTOs;
 
@@ -9,15 +10,11 @@ namespace Pizzeria.Controllers
     [Route("api/[controller]")]
     public class OrderController : ControllerBase
     {
-        private readonly IMongoCollection<Order> _orders;
+        private readonly OrdersContext _ordersContext;
 
-        public OrderController(IMongoDatabase mongoDB)
+        public OrderController(OrdersContext ordersContext)
         {
-            _orders = mongoDB.GetCollection<Order>("Orders");
-
-            var indexKeys = Builders<Order>.IndexKeys.Ascending(o => o.UserId);
-            var indexOpts = new CreateIndexOptions { Background = true };
-            _orders.Indexes.CreateOne(new CreateIndexModel<Order>(indexKeys, indexOpts));
+            _ordersContext = ordersContext;
         }
 
         [HttpGet("user/{userId}")]
@@ -26,7 +23,7 @@ namespace Pizzeria.Controllers
             if (userId <= 0)
                 return BadRequest("Invalid User ID");
 
-            var orders = await _orders.Find(o => o.UserId == userId).ToListAsync();
+            var orders = await _ordersContext.GetAllFromUser(userId);
 
             if(orders is null
                 || orders.Count == 0)
@@ -41,7 +38,7 @@ namespace Pizzeria.Controllers
             if (userId <= 0)
                 return BadRequest("Invalid User ID");
 
-            var order = await _orders.Find(o => o.UserId == userId && o.Id == orderId).FirstOrDefaultAsync();
+            var order = await _ordersContext.GetOneFromUser(userId, orderId);
 
             if(order is null) return NotFound();
 
@@ -63,7 +60,7 @@ namespace Pizzeria.Controllers
 
             try
             {
-                await _orders.InsertOneAsync(model);
+                await _ordersContext.Create(model);
             }
             catch(Exception)
             {
@@ -72,7 +69,7 @@ namespace Pizzeria.Controllers
 
             var response = new OrderResponseDTO(model);
 
-            return Ok(response);
+            return CreatedAtAction(nameof(Create), $"api/order/{response.OrderId}/user/{response.UserId}", response);
         }
 
         [HttpPost("many")]
@@ -92,7 +89,7 @@ namespace Pizzeria.Controllers
 
             try
             {
-                await _orders.InsertManyAsync(modelList);
+                await _ordersContext.CreateMany(modelList);
             }
             catch(Exception)
             {
@@ -124,19 +121,17 @@ namespace Pizzeria.Controllers
             if (model is null)
                 return StatusCode(500, "Error found parsing to entity");
 
-            var orderModel = await _orders.Find(o => o.UserId == userId && o.Id == orderId).FirstOrDefaultAsync();
+            var orderModel = await _ordersContext.GetOneFromUser(userId, orderId);
 
             if (orderModel is null) return NotFound();
 
-            model.CreatedAt = orderModel.CreatedAt;
-            model.Id = orderModel.Id;
-            model.UserId = userId;
+            model.UpdateFromModel(orderModel);
 
             try
             {
-                var result = await _orders.ReplaceOneAsync(o => o.Id == orderId && o.UserId == userId, model);
+                var hadUpdateChanges = await _ordersContext.Update(model, orderId, userId);
 
-                if (result.ModifiedCount == 0) return BadRequest("No changes done in update");
+                if (!hadUpdateChanges) return BadRequest("No changes done in update");
             }
             catch(Exception)
             {
@@ -173,27 +168,10 @@ namespace Pizzeria.Controllers
 
             try
             {
-                foreach (var orderModel in modelList)
-                {
-                    var order = await _orders.Find(o => o.UserId == userId && o.Id == orderModel.Id).FirstOrDefaultAsync();
+                var amountToUpdate = modelList.Count;
+                var hadModifications = await _ordersContext.UpdateMany(modelList, userId, amountToUpdate);
 
-                    orderModel.Id = order.Id;
-                    orderModel.UserId = userId;
-                    orderModel.CreatedAt = order.CreatedAt;
-
-                    var filter = Builders<Order>.Filter.And(
-                        Builders<Order>.Filter.Eq(o => o.Id, orderModel.Id),
-                        Builders<Order>.Filter.Eq(o => o.UserId, userId)
-                        );
-                    var update = Builders<Order>.Update.Set(o => o.Items, orderModel.Items);
-                    updateTasks.Add(_orders.UpdateOneAsync(filter, update));
-                }
-
-                await Task.WhenAll(updateTasks);
-
-                var modifiedCount = updateTasks.Sum(t => t.Result.ModifiedCount);
-
-                if (modifiedCount == 0) return BadRequest("No orders were updated");
+                if (!hadModifications) return BadRequest("One or more orders were not modified");
             }
             catch(Exception)
             {
@@ -208,9 +186,9 @@ namespace Pizzeria.Controllers
         {
             if (userId == 0) return BadRequest("Invalid user ID");
 
-            var result = await _orders.DeleteOneAsync(o => o.Id == orderId && o.UserId == userId);
+            var wasDeleted = await _ordersContext.Delete(orderId, userId);
 
-            if (result.DeletedCount == 0) return BadRequest("No orders were deleted");
+            if (!wasDeleted) return BadRequest("No order was deleted");
 
             return NoContent();
         }
@@ -222,10 +200,11 @@ namespace Pizzeria.Controllers
 
             if (!validIds) return BadRequest("Invalid Order IDs");
 
+            var amountToDelete = orderId.Count;
             var filter = Builders<Order>.Filter.In(o => o.Id, orderId);
-            var result = await _orders.DeleteManyAsync(filter);
+            var wereDeleted = await _ordersContext.DeleteMany(orderId, amountToDelete);
 
-            if (result.DeletedCount == 0) return BadRequest("No orders were deleted");
+            if (!wereDeleted) return BadRequest("One or more orders were not deleted");
 
             return NoContent();
         }

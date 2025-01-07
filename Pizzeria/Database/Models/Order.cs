@@ -33,5 +33,13 @@ namespace Pizzeria.Database.Models
                 CreatedAt = CreatedAt,
                 UpdatedAt = UpdatedAt,
             };
+
+        public void UpdateFromModel(Order order)
+        {
+            Id = order.Id;
+            UserId = order.UserId;
+            CreatedAt = order.CreatedAt;
+            UpdatedAt = DateTime.UtcNow;
+        }
     }
 }
