@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Pizzeria.Database;
 using Pizzeria.Database.Seeders;
@@ -27,6 +28,10 @@ builder.Services.AddDbContext<PizzeriaContext>(options =>
 builder.Services.AddSingleton<IMongoClient>(serviceProvider =>
 {
     var settings = serviceProvider.GetService<IOptions<MongoSettings>>()!.Value;
+
+    var pack = new ConventionPack { new CamelCaseElementNameConvention() };
+    ConventionRegistry.Register("elementNameConvention", pack, x => true);
+
     return new MongoClient(settings.ConnectionString);
 });
 
