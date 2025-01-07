@@ -8,9 +8,14 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - my_secret=${MY_SECRET}
+      - MongoDB__ConnectionString=${MY_SECRET_MONGODB}
+      - MongoDB__Database=${MY_SECRET_MONGODB_DB}
+      - MongoDB__Collection=${MY_SECRET_MONGODB_COLLECTION}
     depends_on:
         mydb:
-            condition: service_healthy
+          condition: service_healthy
+        mongodb:
+          condition: service_healthy
 
   mydb:
     image: mysql:8.0  # MySQL Docker image
@@ -29,6 +34,26 @@ services:
         retries: 5
         start_period: 30s
         timeout: 10s
+  
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MY_SECRET_MONGODB_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MY_SECRET_MONGODB_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MY_SECRET_MONGODB_DB}
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27018:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand({ ping: 1 })"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: always
 
 volumes:
   mysql-data:
+  mongo-data:
+    driver: local
