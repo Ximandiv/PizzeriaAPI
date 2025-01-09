@@ -1,3 +1,4 @@
+using BCrypt.Net;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,6 +43,7 @@ public class UserTest(PizzeriaWebAppFactory<Program> factory)
         { 
             Name = "UniqueUserTest", 
             Email = "test@email.com", 
+            Password = BCrypt.Net.BCrypt.HashPassword("eQuisde12345#"),
             Phone = "123 4567 891",
             Address = "Street Test # Test - Test"
         };

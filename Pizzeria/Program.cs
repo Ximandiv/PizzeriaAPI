@@ -1,10 +1,14 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Pizzeria.Database;
 using Pizzeria.Database.Seeders;
 using Pizzeria.Services;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,12 +48,60 @@ builder.Services.AddScoped<IMongoDatabase>(serviceProvider =>
 
 builder.Services.AddScoped<OrdersContext>();
 
+builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<UserService>();
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+    var secretKey = jwtSettings["SecretKey"];
+    var encodedSecretKey = Encoding.UTF8.GetBytes(secretKey!);
+    options.TokenValidationParameters = new TokenValidationParameters()
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(encodedSecretKey)
+    };
+});
 
 builder.Services.AddControllers();
 // Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Please enter a valid Token",
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        BearerFormat = "JWT"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
 
 var app = builder.Build();
 
@@ -59,10 +111,7 @@ using (var scope = app.Services.CreateScope())
     dbContext.Database.Migrate();
 
     if (environment == "Development")
-    {
-        TestContextSeeder testSeeder = new TestContextSeeder(dbContext);
-        testSeeder.Seed();
-    }
+        await new TestContextSeeder(dbContext).Seed();
 }
 
 // Configure the HTTP request pipeline.
@@ -74,6 +123,7 @@ if (app.Environment.IsDevelopment())
 
 //app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

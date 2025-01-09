@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace Pizzeria.DTOs
+namespace Pizzeria.DTOs.Orders
 {
     public class OrderRequestDTO
     {

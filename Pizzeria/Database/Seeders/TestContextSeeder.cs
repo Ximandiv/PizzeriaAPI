@@ -2,11 +2,12 @@ namespace Pizzeria.Database.Seeders;
 
 public class TestContextSeeder(PizzeriaContext context)
 {
-    public void Seed()
+    public async Task Seed()
     {
         if (!context.Users.Any())
         {
-            UserSeeder.Seed(context, 10);
+            await UserSeeder.Seed(context, 10);
+            await RoleSeeder.Seed(context);
         }
     }
 }

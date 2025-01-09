@@ -1,7 +1,7 @@
 ﻿using Pizzeria.Database.Models;
 using System.ComponentModel.DataAnnotations;
 
-namespace Pizzeria.DTOs
+namespace Pizzeria.DTOs.Orders
 {
     public class OrderItemDTO
     {

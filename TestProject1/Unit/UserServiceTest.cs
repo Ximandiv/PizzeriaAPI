@@ -27,6 +27,7 @@ public class UserServiceTest
             Id = 1,
             Name = "User1",
             Email = "User1@email.com",
+            Password = BCrypt.Net.BCrypt.HashPassword("eQuisde12345#"),
             Address = "Address",
             Phone = "123 4567 891"
         };
@@ -42,8 +43,8 @@ public class UserServiceTest
     public async Task Should_Get_All_With_Correct_Amount()
     {
         List<User> userList = new(){
-            new User { Id = 1, Name = "User1", Email = "User1@email.com", Address = "Address", Phone = "123 4567 891"},
-            new User { Id = 2, Name = "User2", Email = "User2@email.com", Address = "Address", Phone = "123 4567 891"}
+            new User { Id = 1, Name = "User1", Email = "User1@email.com", Password = BCrypt.Net.BCrypt.HashPassword("eQuisde12345#"), Address = "Address", Phone = "123 4567 891"},
+            new User { Id = 2, Name = "User2", Email = "User2@email.com", Password = BCrypt.Net.BCrypt.HashPassword("eQuisde12345#"), Address = "Address", Phone = "123 4567 891"}
         };
 
         _mockDbContext.Setup(c => c.Users).ReturnsDbSet(userList);

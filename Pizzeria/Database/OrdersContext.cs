@@ -32,15 +32,15 @@ namespace Pizzeria.Database
             => await _orders.InsertOneAsync(order);
 
         public async Task CreateMany(List<Order> orderList)
-            => await _orders.InsertManyAsync(orderList);
+            => await _orders.InsertManyAsync(orderList, new InsertManyOptions { IsOrdered = false });
 
-        public async Task<bool> Update(Order order, string orderId, int userId)
+        public async Task<long> Update(Order order, string orderId, int userId)
         {
             var result = await _orders.ReplaceOneAsync(o => o.Id == orderId && o.UserId == userId, order);
-            return result.ModifiedCount > 0;
+            return result.ModifiedCount;
         }
 
-        public async Task<bool> UpdateMany(List<Order> orderList, int userId, int maxCount)
+        public async Task<long> UpdateMany(List<Order> orderList, int userId)
         {
             var updateTasks = new List<Task<UpdateResult>>();
             foreach (var orderModel in orderList)
@@ -63,7 +63,7 @@ namespace Pizzeria.Database
 
             var modifiedCount = updateTasks.Sum(t => t.Result.ModifiedCount);
 
-            return modifiedCount == maxCount;
+            return modifiedCount;
         }
 
         public async Task<bool> Delete(string orderId, int userId)
