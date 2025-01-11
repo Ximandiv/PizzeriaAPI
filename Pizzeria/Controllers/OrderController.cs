@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Pizzeria.Database;
 using Pizzeria.Database.Models;
+using Pizzeria.DTOs;
 using Pizzeria.DTOs.Orders;
 using Pizzeria.DTOs.Users;
 using Pizzeria.Services;
@@ -38,7 +39,8 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, UserError.GetByEmail);
+                ResultObject<Error> userErrorResponse = UserError.GetByEmail;
+                return StatusCode(500, userErrorResponse);
             }
 
             if(user is null) return Forbid();
@@ -50,14 +52,15 @@ namespace Pizzeria.Controllers
             }
             catch(Exception ex)
             {
-                return StatusCode(500, OrderError.GetAllFromUser);
+                ResultObject<Error> orderErrorResponse = OrderError.GetAllFromUser;
+                return StatusCode(500, orderErrorResponse);
             }
 
             if (orders is null
                 || orders.Count == 0)
                 return NotFound();
 
-            var response = orders.Select(o => o.ToDTO()).ToList();
+            ResultObject<List<OrderResponse>> response = orders.Select(o => o.ToDTO()).ToList();
             return Ok(response);
         }
 
@@ -75,14 +78,15 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OrderError.GetAllFromUser);
+                ResultObject<Error> errorResponse = OrderError.GetAllFromUser;
+                return StatusCode(500, errorResponse);
             }
 
             if(orders is null
                 || orders.Count == 0)
                 return NotFound();
 
-            var response = orders.Select(o => o.ToDTO()).ToList();
+            ResultObject<List<OrderResponse>> response = orders.Select(o => o.ToDTO()).ToList();
             return Ok(response);
         }
 
@@ -102,7 +106,8 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, UserError.GetByEmail);
+                ResultObject<Error> userError = UserError.GetByEmail;
+                return StatusCode(500, userError);
             }
 
             if (user is null) return Forbid();
@@ -114,12 +119,13 @@ namespace Pizzeria.Controllers
             }
             catch(Exception ex)
             {
-                return StatusCode(500, OrderError.GetOneFromUser);
+                ResultObject<Error> orderErrorResponse = OrderError.GetOneFromUser;
+                return StatusCode(500, orderErrorResponse);
             }
 
             if (order is null) return NotFound();
 
-            var response = order.ToDTO();
+            ResultObject<OrderResponse> response = order.ToDTO();
             return Ok(response);
         }
 
@@ -137,12 +143,13 @@ namespace Pizzeria.Controllers
             }
             catch(Exception ex)
             {
-                return StatusCode(500, OrderError.GetOneFromUser);
+                ResultObject<Error> errorResponse = OrderError.GetOneFromUser;
+                return StatusCode(500, errorResponse);
             }
 
             if(order is null) return NotFound();
 
-            var response = order.ToDTO();
+            ResultObject<OrderResponse> response = order.ToDTO();
             return Ok(response);
         }
 
@@ -164,18 +171,26 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, UserError.GetByEmail);
+                ResultObject<Error> userError = UserError.GetByEmail;
+                return StatusCode(500, userError);
             }
 
             if (user is null) return Forbid();
 
-            if (order.Items.Count == 0) return BadRequest(OrderError.InvalidItems);
+            if (order.Items.Count == 0)
+            {
+                ResultObject<Error> itemsResponse = OrderError.InvalidItems;
+                return BadRequest(itemsResponse);
+            }
 
             var model = order.ToModel();
 
             if (model is null
                 || (model.Items is null || model.Items.Count == 0))
-                return StatusCode(500, OrderError.InvalidParsing);
+            {
+                ResultObject<Error> parsingResponse = OrderError.InvalidParsing;
+                return StatusCode(500, parsingResponse);
+            }
 
             model.UserId = user.Id;
 
@@ -185,11 +200,12 @@ namespace Pizzeria.Controllers
             }
             catch (Exception)
             {
-                return StatusCode(500, OrderError.Create);
+                ResultObject<Error> errorResponse = OrderError.Create;
+                return StatusCode(500, errorResponse);
             }
 
-            var response = new OrderResponseDTO(model);
-            return CreatedAtAction(nameof(GetOneFromMe), new { orderId = response.OrderId }, response);
+            ResultObject<OrderResponse> response = new OrderResponse(model);
+            return CreatedAtAction(nameof(GetOneFromMe), new { orderId = model.Id }, response);
         }
 
         [HttpPost]
@@ -199,12 +215,19 @@ namespace Pizzeria.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (order.Items.Count == 0) return BadRequest(OrderError.InvalidItems);
+            if (order.Items.Count == 0)
+            {
+                var itemsResponse = OrderError.InvalidItems;
+                return BadRequest(itemsResponse);
+            }
 
             var model = order.ToModel();
 
             if (model is null)
-                return StatusCode(500, OrderError.InvalidParsing);
+            {
+                ResultObject<Error> parsingResponse = OrderError.InvalidParsing;
+                return StatusCode(500, parsingResponse);
+            }
 
             try
             {
@@ -212,11 +235,12 @@ namespace Pizzeria.Controllers
             }
             catch(Exception)
             {
-                return StatusCode(500, OrderError.Create);
+                ResultObject<Error> errorResponse = OrderError.Create;
+                return StatusCode(500, errorResponse);
             }
 
-            var response = new OrderResponseDTO(model);
-            return CreatedAtAction(nameof(GetOneFromUser), new { orderId = response.OrderId, userId = response.UserId }, response);
+            ResultObject<OrderResponse> response = new OrderResponse(model);
+            return CreatedAtAction(nameof(GetOneFromUser), new { orderId = model.Id, userId = model.UserId }, response);
         }
 
         [HttpPost("many/user/me")]
@@ -237,14 +261,19 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, UserError.GetByEmail);
+                ResultObject<Error> userError = UserError.GetByEmail;
+                return StatusCode(500, userError);
             }
 
             if (user is null) return Forbid();
 
             var validOrderItems = orderList.Sum(o => o.Items.Count) > 0;
 
-            if (!validOrderItems) return BadRequest(OrderError.Create);
+            if (!validOrderItems)
+            {
+                ResultObject<Error> itemsResponse = OrderError.InvalidItems;
+                return BadRequest(itemsResponse);
+            }
 
             var modelList = orderList.Select(o => o.ToModel()).ToList();
             modelList.ForEach(o => o.UserId = user.Id);
@@ -252,7 +281,11 @@ namespace Pizzeria.Controllers
             var validModelItems = modelList.Any(o => o.Items is not null || o.Items!.Count == 0);
             if (modelList is null
                 || modelList.Count == 0
-                || !validModelItems) return StatusCode(500, OrderError.InvalidParsing);
+                || !validModelItems)
+            {
+                ResultObject<Error> parsingResponse = OrderError.InvalidParsing;
+                return StatusCode(500, parsingResponse);
+            }
 
             int unsuccessfulInserts = 0;
             try
@@ -264,24 +297,30 @@ namespace Pizzeria.Controllers
                 unsuccessfulInserts = ex.WriteErrors.Count;
 
                 if (unsuccessfulInserts == modelList.Count)
-                    return StatusCode(500, OrderError.Create);
+                {
+                    ResultObject<Error> unsuccessfulResponse = OrderError.Create;
+                    return StatusCode(500, unsuccessfulInserts);
+                }
             }
             catch (Exception)
             {
-                return StatusCode(500, OrderError.Create);
+                ResultObject<Error> errorResponse = OrderError.Create;
+                return StatusCode(500, errorResponse);
             }
 
-            var responseList = new List<OrderResponseDTO>();
+            var responseList = new List<OrderResponse>();
             foreach (var orderModel in modelList)
             {
-                var responseModel = new OrderResponseDTO(orderModel);
+                var responseModel = new OrderResponse(orderModel);
                 responseList.Add(responseModel);
             }
 
-            if (unsuccessfulInserts > 0)
-                return StatusCode(207, responseList);
+            ResultObject<List<OrderResponse>> response = responseList;
 
-            return Ok(responseList);
+            if (unsuccessfulInserts > 0)
+                return StatusCode(207, response);
+
+            return Ok(response);
         }
 
         [HttpPost("many")]
@@ -293,14 +332,22 @@ namespace Pizzeria.Controllers
 
             var validOrderItems = orderList.Sum(o => o.Items.Count) > 0;
 
-            if (!validOrderItems) return BadRequest(OrderError.InvalidItems);
+            if (!validOrderItems)
+            {
+                ResultObject<Error> itemsResponse = OrderError.InvalidItems;
+                return BadRequest(itemsResponse);
+            }
 
             var modelList = orderList.Select(o => o.ToModel()).ToList();
 
             var validModelItems = modelList.Any(o => o.Items is not null || o.Items!.Count == 0);
             if (modelList is null
                 || modelList.Count == 0
-                || !validModelItems) return StatusCode(500, OrderError.InvalidParsing);
+                || !validModelItems)
+            {
+                ResultObject<Error> parsingResponse = OrderError.InvalidParsing;
+                return StatusCode(500, parsingResponse);
+            }
 
             int unsuccessfulInserts = 0;
             try
@@ -311,25 +358,30 @@ namespace Pizzeria.Controllers
             {
                 unsuccessfulInserts = ex.WriteErrors.Count;
 
-                if(unsuccessfulInserts == modelList.Count)
-                    return StatusCode(500, OrderError.Create);
+                if (unsuccessfulInserts == modelList.Count)
+                {
+                    ResultObject<Error> noInsertsResponse = OrderError.Create;
+                    return StatusCode(500, noInsertsResponse);
+                }
             }
             catch(Exception)
             {
                 return StatusCode(500, OrderError.Create);
             }
 
-            var responseList = new List<OrderResponseDTO>();
+            var responseList = new List<OrderResponse>();
             foreach(var orderModel in modelList)
             {
-                var responseModel = new OrderResponseDTO(orderModel);
+                var responseModel = new OrderResponse(orderModel);
                 responseList.Add(responseModel);
             }
 
-            if (unsuccessfulInserts > 0)
-                return StatusCode(207, responseList);
+            ResultObject<List<OrderResponse>> response = responseList;
 
-            return Ok(responseList);
+            if (unsuccessfulInserts > 0)
+                return StatusCode(207, response);
+
+            return Ok(response);
         }
 
         [HttpPut("{orderId}/User/me")]
@@ -350,12 +402,17 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, UserError.GetByEmail);
+                ResultObject<Error> userError = UserError.GetByEmail;
+                return StatusCode(500, userError);
             }
 
             if (user is null) return Forbid();
 
-            if (order.Items.Count == 0) return BadRequest(OrderError.InvalidItems);
+            if (order.Items.Count == 0)
+            {
+                ResultObject<Error> itemsResponse = OrderError.InvalidItems;
+                return BadRequest(itemsResponse);
+            }
 
             var orderModel = await _ordersContext.GetOneFromUser(user.Id, orderId);
 
@@ -366,7 +423,10 @@ namespace Pizzeria.Controllers
             var model = order.ToModel();
 
             if (model is null)
-                return StatusCode(500, OrderError.InvalidParsing);
+            {
+                ResultObject<Error> parsingResponse = OrderError.InvalidParsing;
+                return StatusCode(500, parsingResponse);
+            }
 
             model.UpdateFromModel(orderModel);
 
@@ -374,11 +434,16 @@ namespace Pizzeria.Controllers
             {
                 var amountUpdateChanges = await _ordersContext.Update(model, orderId, user.Id);
 
-                if (amountUpdateChanges == 0) return BadRequest(OrderError.InvalidUpdate);
+                if (amountUpdateChanges == 0)
+                {
+                    ResultObject<Error> invalidUpdate = OrderError.InvalidUpdate;
+                    return BadRequest(invalidUpdate);
+                }
             }
             catch (Exception)
             {
-                return StatusCode(500, OrderError.Update);
+                ResultObject<Error> updateError = OrderError.Update;
+                return StatusCode(500, updateError);
             }
 
             return NoContent();
@@ -391,14 +456,21 @@ namespace Pizzeria.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (order.Items.Count == 0) return BadRequest(OrderError.InvalidItems);
+            if (order.Items.Count == 0)
+            {
+                ResultObject<Error> itemsResponse = OrderError.InvalidItems;
+                return BadRequest(itemsResponse);
+            }
 
             order.UserId = userId;
 
             var model = order.ToModel();
 
             if (model is null)
-                return StatusCode(500, OrderError.InvalidParsing);
+            {
+                ResultObject<Error> parsingResponse = OrderError.InvalidParsing;
+                return StatusCode(500, parsingResponse);
+            }
 
             var orderModel = await _ordersContext.GetOneFromUser(userId, orderId);
 
@@ -410,11 +482,16 @@ namespace Pizzeria.Controllers
             {
                 var amountUpdateChanges = await _ordersContext.Update(model, orderId, userId);
 
-                if (amountUpdateChanges == 0) return BadRequest(OrderError.InvalidUpdate);
+                if (amountUpdateChanges == 0)
+                {
+                    ResultObject<Error> invalidUpdate = OrderError.InvalidUpdate;
+                    return BadRequest(invalidUpdate);
+                }
             }
-            catch(Exception)
+            catch (Exception)
             {
-                return StatusCode(500, OrderError.Update);
+                ResultObject<Error> updateError = OrderError.Update;
+                return StatusCode(500, updateError);
             }
 
             return NoContent();
@@ -438,7 +515,8 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, UserError.GetByEmail);
+                ResultObject<Error> userError = UserError.GetByEmail;
+                return StatusCode(500, userError);
             }
 
             if (user is null) return Forbid();
@@ -446,7 +524,10 @@ namespace Pizzeria.Controllers
             var validModel = orderUpdateList.Any(o => o.Order is not null && o.Order.Items.Count > 0 && !string.IsNullOrEmpty(o.OrderId));
 
             if (!validModel)
-                return UnprocessableEntity(OrderError.InvalidItems);
+            {
+                ResultObject<Error> itemsResponse = OrderError.InvalidItems;
+                return UnprocessableEntity(itemsResponse);
+            }
 
             List<Order> modelList = new();
 
@@ -455,31 +536,45 @@ namespace Pizzeria.Controllers
                 var originalOrder = await _ordersContext.GetOneFromUser(user.Id, order.OrderId!);
 
                 if (originalOrder is null)
-                    return UnprocessableEntity(OrderError.NotFoundBulk);
+                {
+                    ResultObject<Error> notFoundBulkRes = OrderError.NotFoundBulk;
+                    return UnprocessableEntity(notFoundBulkRes);
+                }
 
                 var orderModel = order.Order!.ToModel();
 
-                if (orderModel is null) return UnprocessableEntity(OrderError.InvalidParsing);
+                if (orderModel is null)
+                {
+                    ResultObject<Error> parsingResponse = OrderError.InvalidParsing;
+                    return UnprocessableEntity(parsingResponse);
+                }
 
                 orderModel.Id = order.OrderId!;
 
                 modelList.Add(orderModel);
             }
 
-            if (modelList.Count == 0) return StatusCode(500, OrderError.InvalidParsing);
-
-            var updateTasks = new List<Task<UpdateResult>>();
+            if (modelList.Count == 0)
+            {
+                ResultObject<Error> parsingResponse = OrderError.InvalidParsing;
+                return StatusCode(500, parsingResponse);
+            }
 
             long modificationsTotal = 0;
             try
             {
                 modificationsTotal = await _ordersContext.UpdateMany(modelList, user.Id);
 
-                if (modificationsTotal == 0) return BadRequest(OrderError.InvalidUpdate);
+                if (modificationsTotal == 0)
+                {
+                    ResultObject<Error> invalidResponse = OrderError.InvalidUpdate;
+                    return BadRequest(invalidResponse);
+                }
             }
             catch (Exception)
             {
-                return StatusCode(500, OrderError.Update);
+                ResultObject<Error> updateError = OrderError.Update;
+                return StatusCode(500, updateError);
             }
 
             if (modificationsTotal < modelList.Count)
@@ -507,31 +602,45 @@ namespace Pizzeria.Controllers
                 var originalOrder = await _ordersContext.GetOneFromUser(userId, order.OrderId!);
 
                 if (originalOrder is null)
-                    return UnprocessableEntity(OrderError.GetOneFromUser);
+                {
+                    ResultObject<Error> notFoundBulkRes = OrderError.NotFoundBulk;
+                    return UnprocessableEntity(notFoundBulkRes);
+                }
 
                 var orderModel = order.Order!.ToModel();
 
-                if (orderModel is null) return UnprocessableEntity(OrderError.InvalidParsing);
+                if (orderModel is null)
+                {
+                    ResultObject<Error> parsingResponse = OrderError.InvalidParsing;
+                    return UnprocessableEntity(parsingResponse);
+                }
 
                 orderModel.Id = order.OrderId!;
 
                 modelList.Add(orderModel);
             }
 
-            if(modelList.Count == 0) return StatusCode(500, OrderError.InvalidParsing);
-
-            var updateTasks = new List<Task<UpdateResult>>();
+            if (modelList.Count == 0)
+            {
+                ResultObject<Error> parsingResponse = OrderError.InvalidParsing;
+                return StatusCode(500, parsingResponse);
+            }
 
             long modificationsTotal = 0;
             try
             {
                 modificationsTotal = await _ordersContext.UpdateMany(modelList, userId);
 
-                if (modificationsTotal == 0) return BadRequest(OrderError.InvalidUpdate);
+                if (modificationsTotal == 0)
+                {
+                    ResultObject<Error> invalidResponse = OrderError.InvalidUpdate;
+                    return BadRequest(invalidResponse);
+                }
             }
             catch (Exception)
             {
-                return StatusCode(500, OrderError.Update);
+                ResultObject<Error> updateError = OrderError.Update;
+                return StatusCode(500, updateError);
             }
 
             if (modificationsTotal < modelList.Count)
@@ -555,7 +664,8 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, UserError.GetByEmail);
+                ResultObject<Error> userError = UserError.GetByEmail;
+                return StatusCode(500, userError);
             }
 
             if (user is null) return Forbid();
@@ -567,10 +677,15 @@ namespace Pizzeria.Controllers
             }
             catch(Exception ex)
             {
-                return StatusCode(500, OrderError.Delete);
+                ResultObject<Error> deleteResponse = OrderError.Delete;
+                return StatusCode(500, deleteResponse);
             }
 
-            if (!wasDeleted) return BadRequest(OrderError.InvalidDelete);
+            if (!wasDeleted)
+            {
+                ResultObject<Error> invalidResponse = OrderError.InvalidDelete;
+                return BadRequest(invalidResponse);
+            }
 
             return NoContent();
         }
@@ -579,7 +694,11 @@ namespace Pizzeria.Controllers
         [Authorize(Roles = "admin")]
         public async Task<IActionResult> DeleteOne(string orderId, int userId)
         {
-            if (userId == 0) return BadRequest(UserError.InvalidId);
+            if (userId == 0)
+            {
+                ResultObject<Error> invalidIdResponse = UserError.InvalidId;
+                return BadRequest(invalidIdResponse);
+            }
 
             bool wasDeleted = false;
             try
@@ -588,10 +707,15 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OrderError.Delete);
+                ResultObject<Error> deleteError = OrderError.Delete;
+                return StatusCode(500, deleteError);
             }
 
-            if (!wasDeleted) return BadRequest(OrderError.InvalidDelete);
+            if (!wasDeleted)
+            {
+                ResultObject<Error> invalidError = OrderError.InvalidDelete;
+                return BadRequest(invalidError);
+            }
 
             return NoContent();
         }
@@ -611,14 +735,19 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, UserError.GetByEmail);
+                ResultObject<Error> userError = UserError.GetByEmail;
+                return StatusCode(500, userError);
             }
 
             if (user is null) return Forbid();
 
             var validIds = !orderId.Any(string.IsNullOrEmpty);
 
-            if (!validIds) return BadRequest(OrderError.InvalidIds);
+            if (!validIds)
+            {
+                ResultObject<Error> invalidOrderIdResponse = OrderError.InvalidIds;
+                return BadRequest(invalidOrderIdResponse);
+            }
 
             var amountToDelete = orderId.Count;
             var filter = Builders<Order>.Filter.And(
@@ -633,10 +762,15 @@ namespace Pizzeria.Controllers
             }
             catch(Exception ex)
             {
-                return StatusCode(500, OrderError.Delete);
+                ResultObject<Error> deleteError = OrderError.Delete;
+                return StatusCode(500, deleteError);
             }
 
-            if (!wereDeleted) return BadRequest(OrderError.InvalidDelete);
+            if (!wereDeleted)
+            {
+                ResultObject<Error> invalidResponse = OrderError.InvalidDelete;
+                return BadRequest(invalidResponse);
+            }
 
             return NoContent();
         }
@@ -647,7 +781,11 @@ namespace Pizzeria.Controllers
         {
             var validIds = orderId.Any(id => id is not null);
 
-            if (!validIds) return BadRequest(OrderError.InvalidIds);
+            if (!validIds)
+            {
+                ResultObject<Error> invalidOrderIdResponse = OrderError.InvalidIds;
+                return BadRequest(invalidOrderIdResponse);
+            }
 
             var amountToDelete = orderId.Count;
             var filter = Builders<Order>.Filter.And(
@@ -662,10 +800,15 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OrderError.Delete);
+                ResultObject<Error> deleteError = OrderError.Delete;
+                return StatusCode(500, deleteError);
             }
 
-            if (!wereDeleted) return BadRequest(OrderError.InvalidDelete);
+            if (!wereDeleted)
+            {
+                ResultObject<Error> invalidResponse = OrderError.InvalidDelete;
+                return BadRequest(invalidResponse);
+            }
 
             return NoContent();
         }

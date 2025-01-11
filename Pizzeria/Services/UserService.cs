@@ -6,7 +6,7 @@ namespace Pizzeria.Services;
 
 public class UserService(PizzeriaContext context)
 {
-    public async Task<IEnumerable<User>> GetAll() => await context.Users.ToListAsync();
+    public async Task<List<User>?> GetAll() => await context.Users.ToListAsync();
 
     public async Task<User?> Get(int id) => await context.Users.FindAsync(id);
 

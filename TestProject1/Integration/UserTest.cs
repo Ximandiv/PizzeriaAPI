@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Pizzeria.Database;
 using Pizzeria.Database.Models;
+using Pizzeria.DTOs;
 
 namespace TestProject1.Integration;
 
@@ -22,15 +23,16 @@ public class UserTest(PizzeriaWebAppFactory<Program> factory)
         response.EnsureSuccessStatusCode();
         
         var responseBody = await response.Content.ReadAsStringAsync();
-        var listOfUsers = JsonConvert.DeserializeObject<List<User>>(responseBody);
+        var result = JsonConvert.DeserializeObject<ResultObject<List<User>>>(responseBody);
         
         using var scope = factory.Server.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<PizzeriaContext>();
         
         int userCount = await context.Users.CountAsync();
 
-        listOfUsers.Should().NotBeNull();
-        listOfUsers!.Count.Should().Be(userCount);
+        result.Should().NotBeNull();
+        result!.Message.Should().NotBeNull();
+        result.Message.Count.Should().Be(userCount);
     }
 
     [Fact]
@@ -56,8 +58,10 @@ public class UserTest(PizzeriaWebAppFactory<Program> factory)
         response.EnsureSuccessStatusCode();
 
         var responseBody = await response.Content.ReadAsStringAsync();
-        var userResponse = JsonConvert.DeserializeObject<User>(responseBody);
+        var userResponse = JsonConvert.DeserializeObject<ResultObject<User>>(responseBody);
 
-        userResponse.Should().BeEquivalentTo(user);
+        userResponse.Should().NotBeNull();
+        userResponse!.Message.Should().NotBeNull();
+        userResponse.Message.Should().BeEquivalentTo(user);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Pizzeria.DTOs.Orders
 {
-    public class OrderResponseDTO : GenericResponse
+    public class OrderResponse
     {
         public string OrderId { get; set; }
 
@@ -14,7 +14,7 @@ namespace Pizzeria.DTOs.Orders
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        public OrderResponseDTO(Order orderModel)
+        public OrderResponse(Order orderModel)
         {
             OrderId = orderModel.Id!;
             UserId = orderModel.UserId!;

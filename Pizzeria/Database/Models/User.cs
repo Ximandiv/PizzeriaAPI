@@ -41,11 +41,5 @@ public class User
     public virtual ICollection<UserRoles>? UserRoles { get; set; }
 
     public UserResponse ToResponse()
-        => new()
-        {
-            Name = Name,
-            Email = Email,
-            Address = Address,
-            Phone = Phone
-        };
+        => new(Name, Email, Phone, Address);
 }

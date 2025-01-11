@@ -1,4 +1,7 @@
-﻿namespace Pizzeria.DTOs
+﻿using Pizzeria.DTOs.Orders;
+using Pizzeria.DTOs.Users;
+
+namespace Pizzeria.DTOs
 {
     public class ResultObject<T>
     {
@@ -12,8 +15,12 @@
             Message = message;
         }
 
-        public static implicit operator ResultObject<T>(GenericResponse message) => new ResultObject<T>(true, (T)(object)message);
-        public static implicit operator ResultObject<T>(List<GenericResponse> message) => new ResultObject<T>(true, (T)(object)message);
+        public static implicit operator ResultObject<T>(UserResponse message) => new ResultObject<T>(true, (T)(object)message);
+        public static implicit operator ResultObject<T>(List<UserResponse> message) => new ResultObject<T>(true, (T)(object)message);
+
+        public static implicit operator ResultObject<T>(OrderResponse message) => new ResultObject<T>(true, (T)(object)message);
+        public static implicit operator ResultObject<T>(List<OrderResponse> message) => new ResultObject<T>(true, (T)(object)message);
+
         public static implicit operator ResultObject<T>(string message) => new ResultObject<T>(true, (T)(object)message);
 
         public static implicit operator ResultObject<T>(Error message) => new ResultObject<T>(false, (T)(object)message);

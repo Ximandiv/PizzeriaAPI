@@ -25,14 +25,8 @@ namespace Pizzeria.Database.Models
         [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        public OrderRequestDTO ToDTO()
-            => new OrderRequestDTO()
-            {
-                UserId = UserId,
-                Items = Items.Select(i => i.ToDTO()).ToList(),
-                CreatedAt = CreatedAt,
-                UpdatedAt = UpdatedAt,
-            };
+        public OrderResponse ToDTO()
+            => new OrderResponse(this);
 
         public void UpdateFromModel(Order order)
         {

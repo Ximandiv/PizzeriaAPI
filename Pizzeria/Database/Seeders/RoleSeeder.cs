@@ -9,11 +9,13 @@ internal static class RoleSeeder
     {
         var roleUser = new Role()
         {
+            Id = 1,
             Name = "user" 
         };
 
         var roleAdmin = new Role()
         {
+            Id = 2,
             Name = "admin"
         };
 

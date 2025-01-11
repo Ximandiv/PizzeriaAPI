@@ -17,21 +17,22 @@ public class UserController
     [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetAll()
     {
-        IEnumerable<User?>? userList;
+        List<User>? userList;
         try
         {
             userList = await userService.GetAll();
         }
         catch (Exception ex)
         {
-            return StatusCode(500, UserError.GetAll);
+            ResultObject<Error> errorResponse = UserError.GetAll;
+            return StatusCode(500, errorResponse);
         }
 
         if(userList == null 
             || userList.Count() == 0)
             return NotFound();
 
-        var response = userList.Select(u => u!.ToResponse()).ToList();
+        ResultObject<List<UserResponse>> response = userList.Select(u => u!.ToResponse()).ToList();
 
         return Ok(response);
     }
@@ -47,13 +48,14 @@ public class UserController
         }
         catch(Exception ex)
         {
-            return StatusCode(500, UserError.GetByEmail);
+            ResultObject<Error> errorResponse = UserError.GetByEmail;
+            return StatusCode(500, errorResponse);
         }
 
         if(user is null)
             return NotFound();
 
-        var response = user.ToResponse();
+        ResultObject<UserResponse> response = user.ToResponse();
 
         return Ok(response);
     }
@@ -65,23 +67,25 @@ public class UserController
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
+        ResultObject<Error> invalidCredsResponse = UserError.InvalidCredentials;
         try
         {
             User? user = await userService.GetByEmail(loginModel.Email);
 
-            if (user is null) return BadRequest(UserError.InvalidCredentials);
+            if (user is null) return BadRequest(invalidCredsResponse);
 
             var validPassword = BCrypt.Net.BCrypt.Verify(loginModel.Password, user.Password);
 
-            if (!validPassword) return BadRequest(UserError.InvalidCredentials);
+            if (!validPassword) return BadRequest(invalidCredsResponse);
 
-            var jwt = tokenService.GenerateJWT(user);
+            ResultObject<string> jwt = tokenService.GenerateJWT(user);
 
             return Ok(jwt);
         }
         catch (Exception ex)
         {
-            return StatusCode(500, UserError.LogIn);
+            ResultObject<Error> errorResponse = UserError.LogIn;
+            return StatusCode(500, errorResponse);
         }
     }
 
@@ -102,10 +106,11 @@ public class UserController
         }
         catch(Exception ex)
         {
-            return StatusCode(500, UserError.Create);
+            ResultObject<Error> errorResponse = UserError.Create;
+            return StatusCode(500, errorResponse);
         }
 
-        var response = entityModel.ToResponse();
+        ResultObject<UserResponse> response = entityModel.ToResponse();
 
         return CreatedAtAction(nameof(GetById),  new { id = entityModel.Id }, response);
     }
