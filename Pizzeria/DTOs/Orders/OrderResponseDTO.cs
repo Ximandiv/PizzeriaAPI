@@ -1,10 +1,8 @@
 ﻿using Pizzeria.Database.Models;
-using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
 
 namespace Pizzeria.DTOs.Orders
 {
-    public class OrderResponseDTO
+    public class OrderResponseDTO : GenericResponse
     {
         public string OrderId { get; set; }
 

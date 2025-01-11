@@ -20,11 +20,15 @@ public class UserService(PizzeriaContext context)
     {
         await context.Users.AddAsync(user);
         await context.SaveChangesAsync();
+    }
 
+    public async Task AddDefaultRole(User user)
+    {
         UserRoles userRoles = new();
         userRoles.UserId = user.Id;
         userRoles.RoleId = 1;
 
         await context.UserRoles.AddAsync(userRoles);
+        await context.SaveChangesAsync();
     }
 }

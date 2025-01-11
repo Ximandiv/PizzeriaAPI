@@ -2,7 +2,7 @@
 
 namespace Pizzeria.DTOs.Users
 {
-    public class UserResponse
+    public class UserResponse : GenericResponse
     {
         [Required]
         [StringLength(64)]

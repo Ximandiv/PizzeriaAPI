@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pizzeria.Database.Models;
+using Pizzeria.DTOs;
 using Pizzeria.DTOs.Users;
 using Pizzeria.Services;
 
@@ -16,24 +17,45 @@ public class UserController
     [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetAll()
     {
-        IEnumerable<User?>? userList = await userService.GetAll();
+        IEnumerable<User?>? userList;
+        try
+        {
+            userList = await userService.GetAll();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, UserError.GetAll);
+        }
 
         if(userList == null 
             || userList.Count() == 0)
             return NotFound();
-        
-        return Ok(userList.Select(u => u!.ToResponse()).ToList());
+
+        var response = userList.Select(u => u!.ToResponse()).ToList();
+
+        return Ok(response);
     }
 
     [HttpGet("{id}")]
     [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetById(int id)
     {
-        User? user = await userService.Get(id);
+        User? user;
+        try
+        {
+            user = await userService.Get(id);
+        }
+        catch(Exception ex)
+        {
+            return StatusCode(500, UserError.GetByEmail);
+        }
 
-        if(user == null) return NotFound();
+        if(user is null)
+            return NotFound();
 
-        return Ok(user.ToResponse());
+        var response = user.ToResponse();
+
+        return Ok(response);
     }
 
     [HttpPost("login")]
@@ -43,17 +65,24 @@ public class UserController
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        User? user = await userService.GetByEmail(loginModel.Email);
+        try
+        {
+            User? user = await userService.GetByEmail(loginModel.Email);
 
-        if (user is null) return BadRequest("Invalid credentials");
+            if (user is null) return BadRequest(UserError.InvalidCredentials);
 
-        var validPassword = BCrypt.Net.BCrypt.Verify(loginModel.Password, user.Password);
+            var validPassword = BCrypt.Net.BCrypt.Verify(loginModel.Password, user.Password);
 
-        if (!validPassword) return BadRequest("Invalid credentials");
+            if (!validPassword) return BadRequest(UserError.InvalidCredentials);
 
-        var jwt = tokenService.GenerateJWT(user);
+            var jwt = tokenService.GenerateJWT(user);
 
-        return Ok(jwt);
+            return Ok(jwt);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, UserError.LogIn);
+        }
     }
 
     [HttpPost("register")]
@@ -65,7 +94,16 @@ public class UserController
 
         User entityModel = model.ToEntity();
 
-        await userService.Create(entityModel);
+        try
+        {
+            await userService.Create(entityModel);
+
+            await userService.AddDefaultRole(entityModel);
+        }
+        catch(Exception ex)
+        {
+            return StatusCode(500, UserError.Create);
+        }
 
         var response = entityModel.ToResponse();
 

@@ -4,6 +4,7 @@ using MongoDB.Driver;
 using Pizzeria.Database;
 using Pizzeria.Database.Models;
 using Pizzeria.DTOs.Orders;
+using Pizzeria.DTOs.Users;
 using Pizzeria.Services;
 using System.Security.Claims;
 
@@ -30,17 +31,34 @@ namespace Pizzeria.Controllers
 
             if (string.IsNullOrEmpty(authUserEmail)) return Forbid();
 
-            var user = await _userService.GetByEmail(authUserEmail);
+            User? user;
+            try
+            {
+                user = await _userService.GetByEmail(authUserEmail);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, UserError.GetByEmail);
+            }
 
             if(user is null) return Forbid();
 
-            var orders = await _ordersContext.GetAllFromUser(user.Id);
+            List<Order>? orders;
+            try
+            {
+                orders = await _ordersContext.GetAllFromUser(user.Id);
+            }
+            catch(Exception ex)
+            {
+                return StatusCode(500, OrderError.GetAllFromUser);
+            }
 
             if (orders is null
                 || orders.Count == 0)
                 return NotFound();
 
-            return Ok(orders);
+            var response = orders.Select(o => o.ToDTO()).ToList();
+            return Ok(response);
         }
 
         [HttpGet("user/{userId}")]
@@ -48,15 +66,24 @@ namespace Pizzeria.Controllers
         public async Task<IActionResult> GetAllFromUser(int userId)
         {
             if (userId <= 0)
-                return BadRequest("Invalid User ID");
+                return BadRequest(UserError.InvalidId);
 
-            var orders = await _ordersContext.GetAllFromUser(userId);
+            List<Order>? orders;
+            try
+            {
+                orders = await _ordersContext.GetAllFromUser(userId);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, OrderError.GetAllFromUser);
+            }
 
             if(orders is null
                 || orders.Count == 0)
                 return NotFound();
 
-            return Ok(orders);
+            var response = orders.Select(o => o.ToDTO()).ToList();
+            return Ok(response);
         }
 
 
@@ -68,15 +95,32 @@ namespace Pizzeria.Controllers
 
             if (string.IsNullOrEmpty(authUserEmail)) return Forbid();
 
-            var user = await _userService.GetByEmail(authUserEmail);
+            User? user;
+            try
+            {
+                user = await _userService.GetByEmail(authUserEmail);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, UserError.GetByEmail);
+            }
 
             if (user is null) return Forbid();
 
-            var order = await _ordersContext.GetOneFromUser(user.Id, orderId);
+            Order? order;
+            try
+            {
+                order = await _ordersContext.GetOneFromUser(user.Id, orderId);
+            }
+            catch(Exception ex)
+            {
+                return StatusCode(500, OrderError.GetOneFromUser);
+            }
 
             if (order is null) return NotFound();
 
-            return Ok(order);
+            var response = order.ToDTO();
+            return Ok(response);
         }
 
         [HttpGet("{orderId}/user/{userId}")]
@@ -84,13 +128,22 @@ namespace Pizzeria.Controllers
         public async Task<IActionResult> GetOneFromUser(string orderId, int userId)
         {
             if (userId <= 0)
-                return BadRequest("Invalid User ID");
+                return BadRequest(UserError.InvalidId);
 
-            var order = await _ordersContext.GetOneFromUser(userId, orderId);
+            Order? order;
+            try
+            {
+                order = await _ordersContext.GetOneFromUser(userId, orderId);
+            }
+            catch(Exception ex)
+            {
+                return StatusCode(500, OrderError.GetOneFromUser);
+            }
 
             if(order is null) return NotFound();
 
-            return Ok(order);
+            var response = order.ToDTO();
+            return Ok(response);
         }
 
         [HttpPost("user/me")]
@@ -104,16 +157,25 @@ namespace Pizzeria.Controllers
 
             if (string.IsNullOrEmpty(authUserEmail)) return Forbid();
 
-            var user = await _userService.GetByEmail(authUserEmail);
+            User? user;
+            try
+            {
+                user = await _userService.GetByEmail(authUserEmail);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, UserError.GetByEmail);
+            }
 
             if (user is null) return Forbid();
 
-            if (order.Items.Count == 0) return BadRequest("No Items found in Order");
+            if (order.Items.Count == 0) return BadRequest(OrderError.InvalidItems);
 
             var model = order.ToModel();
 
-            if (model is null)
-                return StatusCode(500, "Error found parsing to entity");
+            if (model is null
+                || (model.Items is null || model.Items.Count == 0))
+                return StatusCode(500, OrderError.InvalidParsing);
 
             model.UserId = user.Id;
 
@@ -123,11 +185,10 @@ namespace Pizzeria.Controllers
             }
             catch (Exception)
             {
-                return StatusCode(500, "Error found while creating entity");
+                return StatusCode(500, OrderError.Create);
             }
 
             var response = new OrderResponseDTO(model);
-
             return CreatedAtAction(nameof(GetOneFromMe), new { orderId = response.OrderId }, response);
         }
 
@@ -138,12 +199,12 @@ namespace Pizzeria.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (order.Items.Count == 0) return BadRequest("No Items found in Order");
+            if (order.Items.Count == 0) return BadRequest(OrderError.InvalidItems);
 
             var model = order.ToModel();
 
             if (model is null)
-                return StatusCode(500, "Error found parsing to entity");
+                return StatusCode(500, OrderError.InvalidParsing);
 
             try
             {
@@ -151,11 +212,10 @@ namespace Pizzeria.Controllers
             }
             catch(Exception)
             {
-                return StatusCode(500, "Error found while creating entity");
+                return StatusCode(500, OrderError.Create);
             }
 
             var response = new OrderResponseDTO(model);
-
             return CreatedAtAction(nameof(GetOneFromUser), new { orderId = response.OrderId, userId = response.UserId }, response);
         }
 
@@ -170,19 +230,29 @@ namespace Pizzeria.Controllers
 
             if (string.IsNullOrEmpty(authUserEmail)) return Forbid();
 
-            var user = await _userService.GetByEmail(authUserEmail);
+            User? user;
+            try
+            {
+                user = await _userService.GetByEmail(authUserEmail);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, UserError.GetByEmail);
+            }
 
             if (user is null) return Forbid();
 
             var validOrderItems = orderList.Sum(o => o.Items.Count) > 0;
 
-            if (!validOrderItems) return BadRequest("No Items found in an Order");
+            if (!validOrderItems) return BadRequest(OrderError.Create);
 
             var modelList = orderList.Select(o => o.ToModel()).ToList();
             modelList.ForEach(o => o.UserId = user.Id);
 
+            var validModelItems = modelList.Any(o => o.Items is not null || o.Items!.Count == 0);
             if (modelList is null
-                || modelList.Count == 0) return StatusCode(500, "Error found parsing to entity");
+                || modelList.Count == 0
+                || !validModelItems) return StatusCode(500, OrderError.InvalidParsing);
 
             int unsuccessfulInserts = 0;
             try
@@ -194,11 +264,11 @@ namespace Pizzeria.Controllers
                 unsuccessfulInserts = ex.WriteErrors.Count;
 
                 if (unsuccessfulInserts == modelList.Count)
-                    return StatusCode(500, "Error found while creating entities");
+                    return StatusCode(500, OrderError.Create);
             }
             catch (Exception)
             {
-                return StatusCode(500, "Error found while creating entities");
+                return StatusCode(500, OrderError.Create);
             }
 
             var responseList = new List<OrderResponseDTO>();
@@ -223,12 +293,14 @@ namespace Pizzeria.Controllers
 
             var validOrderItems = orderList.Sum(o => o.Items.Count) > 0;
 
-            if (!validOrderItems) return BadRequest("No Items found in an Order");
+            if (!validOrderItems) return BadRequest(OrderError.InvalidItems);
 
             var modelList = orderList.Select(o => o.ToModel()).ToList();
 
+            var validModelItems = modelList.Any(o => o.Items is not null || o.Items!.Count == 0);
             if (modelList is null
-                || modelList.Count == 0) return StatusCode(500, "Error found parsing to entity");
+                || modelList.Count == 0
+                || !validModelItems) return StatusCode(500, OrderError.InvalidParsing);
 
             int unsuccessfulInserts = 0;
             try
@@ -240,11 +312,11 @@ namespace Pizzeria.Controllers
                 unsuccessfulInserts = ex.WriteErrors.Count;
 
                 if(unsuccessfulInserts == modelList.Count)
-                    return StatusCode(500, "Error found while creating entities");
+                    return StatusCode(500, OrderError.Create);
             }
             catch(Exception)
             {
-                return StatusCode(500, "Error found while creating entities");
+                return StatusCode(500, OrderError.Create);
             }
 
             var responseList = new List<OrderResponseDTO>();
@@ -271,11 +343,19 @@ namespace Pizzeria.Controllers
 
             if (string.IsNullOrEmpty(authUserEmail)) return Forbid();
 
-            var user = await _userService.GetByEmail(authUserEmail);
+            User? user;
+            try
+            {
+                user = await _userService.GetByEmail(authUserEmail);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, UserError.GetByEmail);
+            }
 
             if (user is null) return Forbid();
 
-            if (order.Items.Count == 0) return BadRequest("No Items found in Order");
+            if (order.Items.Count == 0) return BadRequest(OrderError.InvalidItems);
 
             var orderModel = await _ordersContext.GetOneFromUser(user.Id, orderId);
 
@@ -286,7 +366,7 @@ namespace Pizzeria.Controllers
             var model = order.ToModel();
 
             if (model is null)
-                return StatusCode(500, "Error found parsing to entity");
+                return StatusCode(500, OrderError.InvalidParsing);
 
             model.UpdateFromModel(orderModel);
 
@@ -294,11 +374,11 @@ namespace Pizzeria.Controllers
             {
                 var amountUpdateChanges = await _ordersContext.Update(model, orderId, user.Id);
 
-                if (amountUpdateChanges == 0) return BadRequest("No changes done in update");
+                if (amountUpdateChanges == 0) return BadRequest(OrderError.InvalidUpdate);
             }
             catch (Exception)
             {
-                return StatusCode(500, "Error found while creating entities");
+                return StatusCode(500, OrderError.Update);
             }
 
             return NoContent();
@@ -311,14 +391,14 @@ namespace Pizzeria.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (order.Items.Count == 0) return BadRequest("No Items found in Order");
+            if (order.Items.Count == 0) return BadRequest(OrderError.InvalidItems);
 
             order.UserId = userId;
 
             var model = order.ToModel();
 
             if (model is null)
-                return StatusCode(500, "Error found parsing to entity");
+                return StatusCode(500, OrderError.InvalidParsing);
 
             var orderModel = await _ordersContext.GetOneFromUser(userId, orderId);
 
@@ -330,11 +410,11 @@ namespace Pizzeria.Controllers
             {
                 var amountUpdateChanges = await _ordersContext.Update(model, orderId, userId);
 
-                if (amountUpdateChanges == 0) return BadRequest("No changes done in update");
+                if (amountUpdateChanges == 0) return BadRequest(OrderError.InvalidUpdate);
             }
             catch(Exception)
             {
-                return StatusCode(500, "Error found while creating entities");
+                return StatusCode(500, OrderError.Update);
             }
 
             return NoContent();
@@ -351,14 +431,22 @@ namespace Pizzeria.Controllers
 
             if (string.IsNullOrEmpty(authUserEmail)) return Forbid();
 
-            var user = await _userService.GetByEmail(authUserEmail);
+            User? user;
+            try
+            {
+                user = await _userService.GetByEmail(authUserEmail);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, UserError.GetByEmail);
+            }
 
             if (user is null) return Forbid();
 
             var validModel = orderUpdateList.Any(o => o.Order is not null && o.Order.Items.Count > 0 && !string.IsNullOrEmpty(o.OrderId));
 
             if (!validModel)
-                return UnprocessableEntity("No Items found in Order");
+                return UnprocessableEntity(OrderError.InvalidItems);
 
             List<Order> modelList = new();
 
@@ -367,15 +455,18 @@ namespace Pizzeria.Controllers
                 var originalOrder = await _ordersContext.GetOneFromUser(user.Id, order.OrderId!);
 
                 if (originalOrder is null)
-                    return UnprocessableEntity(new { Message = "An order was not found", Object = order });
+                    return UnprocessableEntity(OrderError.NotFoundBulk);
 
                 var orderModel = order.Order!.ToModel();
+
+                if (orderModel is null) return UnprocessableEntity(OrderError.InvalidParsing);
+
                 orderModel.Id = order.OrderId!;
 
                 modelList.Add(orderModel);
             }
 
-            if (modelList.Count == 0) return StatusCode(500, "Error found while parsing to entities");
+            if (modelList.Count == 0) return StatusCode(500, OrderError.InvalidParsing);
 
             var updateTasks = new List<Task<UpdateResult>>();
 
@@ -384,11 +475,11 @@ namespace Pizzeria.Controllers
             {
                 modificationsTotal = await _ordersContext.UpdateMany(modelList, user.Id);
 
-                if (modificationsTotal == 0) return StatusCode(207, "One or more orders were not modified");
+                if (modificationsTotal == 0) return BadRequest(OrderError.InvalidUpdate);
             }
             catch (Exception)
             {
-                return StatusCode(500, "Error found while creating entities");
+                return StatusCode(500, OrderError.Update);
             }
 
             if (modificationsTotal < modelList.Count)
@@ -407,7 +498,7 @@ namespace Pizzeria.Controllers
             var validModel = orderUpdateList.Any(o => o.Order is not null && o.Order.Items.Count > 0);
 
             if (!validModel)
-                return UnprocessableEntity("No Items found in Order");
+                return UnprocessableEntity(OrderError.InvalidItems);
 
             List<Order> modelList = new();
 
@@ -416,15 +507,18 @@ namespace Pizzeria.Controllers
                 var originalOrder = await _ordersContext.GetOneFromUser(userId, order.OrderId!);
 
                 if (originalOrder is null)
-                    return UnprocessableEntity(new { Message = "An order was not found", Object = order });
+                    return UnprocessableEntity(OrderError.GetOneFromUser);
 
                 var orderModel = order.Order!.ToModel();
+
+                if (orderModel is null) return UnprocessableEntity(OrderError.InvalidParsing);
+
                 orderModel.Id = order.OrderId!;
 
                 modelList.Add(orderModel);
             }
 
-            if(modelList.Count == 0) return StatusCode(500, "Error found while parsing to entities");
+            if(modelList.Count == 0) return StatusCode(500, OrderError.InvalidParsing);
 
             var updateTasks = new List<Task<UpdateResult>>();
 
@@ -433,11 +527,11 @@ namespace Pizzeria.Controllers
             {
                 modificationsTotal = await _ordersContext.UpdateMany(modelList, userId);
 
-                if (modificationsTotal == 0) return BadRequest("No orders were modified");
+                if (modificationsTotal == 0) return BadRequest(OrderError.InvalidUpdate);
             }
             catch (Exception)
             {
-                return StatusCode(500, "Error found while creating entities");
+                return StatusCode(500, OrderError.Update);
             }
 
             if (modificationsTotal < modelList.Count)
@@ -454,13 +548,29 @@ namespace Pizzeria.Controllers
 
             if (string.IsNullOrEmpty(authUserEmail)) return Forbid();
 
-            var user = await _userService.GetByEmail(authUserEmail);
+            User? user;
+            try
+            {
+                user = await _userService.GetByEmail(authUserEmail);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, UserError.GetByEmail);
+            }
 
             if (user is null) return Forbid();
 
-            var wasDeleted = await _ordersContext.Delete(orderId, user.Id);
+            bool wasDeleted = false;
+            try
+            {
+                wasDeleted = await _ordersContext.Delete(orderId, user.Id);
+            }
+            catch(Exception ex)
+            {
+                return StatusCode(500, OrderError.Delete);
+            }
 
-            if (!wasDeleted) return BadRequest("No order was deleted");
+            if (!wasDeleted) return BadRequest(OrderError.InvalidDelete);
 
             return NoContent();
         }
@@ -469,11 +579,19 @@ namespace Pizzeria.Controllers
         [Authorize(Roles = "admin")]
         public async Task<IActionResult> DeleteOne(string orderId, int userId)
         {
-            if (userId == 0) return BadRequest("Invalid user ID");
+            if (userId == 0) return BadRequest(UserError.InvalidId);
 
-            var wasDeleted = await _ordersContext.Delete(orderId, userId);
+            bool wasDeleted = false;
+            try
+            {
+                wasDeleted = await _ordersContext.Delete(orderId, userId);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, OrderError.Delete);
+            }
 
-            if (!wasDeleted) return BadRequest("No order was deleted");
+            if (!wasDeleted) return BadRequest(OrderError.InvalidDelete);
 
             return NoContent();
         }
@@ -486,22 +604,39 @@ namespace Pizzeria.Controllers
 
             if (string.IsNullOrEmpty(authUserEmail)) return Forbid();
 
-            var user = await _userService.GetByEmail(authUserEmail);
+            User? user;
+            try
+            {
+                user = await _userService.GetByEmail(authUserEmail);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, UserError.GetByEmail);
+            }
 
             if (user is null) return Forbid();
 
             var validIds = !orderId.Any(string.IsNullOrEmpty);
 
-            if (!validIds) return BadRequest("Invalid Order IDs");
+            if (!validIds) return BadRequest(OrderError.InvalidIds);
 
             var amountToDelete = orderId.Count;
             var filter = Builders<Order>.Filter.And(
                 Builders<Order>.Filter.In(o => o.Id, orderId),
                 Builders<Order>.Filter.Eq(o => o.UserId, user.Id)
                 );
-            var wereDeleted = await _ordersContext.DeleteMany(orderId, amountToDelete);
 
-            if (!wereDeleted) return BadRequest("One or more orders were not deleted");
+            bool wereDeleted = false;
+            try
+            {
+                wereDeleted = await _ordersContext.DeleteMany(orderId, amountToDelete);
+            }
+            catch(Exception ex)
+            {
+                return StatusCode(500, OrderError.Delete);
+            }
+
+            if (!wereDeleted) return BadRequest(OrderError.InvalidDelete);
 
             return NoContent();
         }
@@ -512,16 +647,25 @@ namespace Pizzeria.Controllers
         {
             var validIds = orderId.Any(id => id is not null);
 
-            if (!validIds) return BadRequest("Invalid Order IDs");
+            if (!validIds) return BadRequest(OrderError.InvalidIds);
 
             var amountToDelete = orderId.Count;
             var filter = Builders<Order>.Filter.And(
                 Builders<Order>.Filter.In(o => o.Id, orderId),
                 Builders<Order>.Filter.Eq(o => o.UserId, userId)
                 );
-            var wereDeleted = await _ordersContext.DeleteMany(orderId, amountToDelete);
 
-            if (!wereDeleted) return BadRequest("One or more orders were not deleted");
+            bool wereDeleted = false;
+            try
+            {
+                wereDeleted = await _ordersContext.DeleteMany(orderId, amountToDelete);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, OrderError.Delete);
+            }
+
+            if (!wereDeleted) return BadRequest(OrderError.InvalidDelete);
 
             return NoContent();
         }
