@@ -12,6 +12,10 @@ jobs:
 
     env:
       ConnectionStrings__DefaultConnection: Server=localhost;port=3306;database=${{ secrets.DB_TEST_NAME }};user=root;password=${{ secrets.DB_TEST_PASSWORD }};
+      JwtSettings__SecretKey: ${{ secrets.TEST_JWT_SECRETKEY }}
+      JwtSettings__Issuer: ${{ secrets.TEST_JWT_ISSUER }}
+      JwtSettings__Audience: ${{ secrets.TEST_JWT_AUDIENCE }}
+      JwtSettings__ExpirationInMinutes: ${{ secrets.TEST_JWT_EXPIRATIONINMINS }}
     
     services:
       mysql:
