@@ -11,6 +11,10 @@ services:
       - MongoDB__ConnectionString=${MY_SECRET_MONGODB}
       - MongoDB__Database=${MY_SECRET_MONGODB_DB}
       - MongoDB__Collection=${MY_SECRET_MONGODB_COLLECTION}
+      - JwtSettings__SecretKey=${MY_SECRET_JWT_KEY}
+      - JwtSettings__Issuer=${MY_SECRET_JWT_ISSUER}
+      - JwtSettings__Audience=${MY_SECRET_JWT_AUDIENCE}
+      - JwtSettings__ExpirationInMinutes=${MY_SECRET_JWT_EXPIRATIONINMINUTES}
     depends_on:
         mydb:
           condition: service_healthy

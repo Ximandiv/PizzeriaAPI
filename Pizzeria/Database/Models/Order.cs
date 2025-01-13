@@ -1,6 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using Pizzeria.DTOs;
+using Pizzeria.DTOs.Orders;
 using System.ComponentModel.DataAnnotations;
 
 namespace Pizzeria.Database.Models
@@ -25,13 +25,15 @@ namespace Pizzeria.Database.Models
         [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        public OrderRequestDTO ToDTO()
-            => new OrderRequestDTO()
-            {
-                UserId = UserId,
-                Items = Items.Select(i => i.ToDTO()).ToList(),
-                CreatedAt = CreatedAt,
-                UpdatedAt = UpdatedAt,
-            };
+        public OrderResponse ToDTO()
+            => new OrderResponse(this);
+
+        public void UpdateFromModel(Order order)
+        {
+            Id = order.Id;
+            UserId = order.UserId;
+            CreatedAt = order.CreatedAt;
+            UpdatedAt = DateTime.UtcNow;
+        }
     }
 }

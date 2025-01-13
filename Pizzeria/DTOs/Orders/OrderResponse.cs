@@ -1,10 +1,8 @@
 ﻿using Pizzeria.Database.Models;
-using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
 
-namespace Pizzeria.DTOs
+namespace Pizzeria.DTOs.Orders
 {
-    public class OrderResponseDTO
+    public class OrderResponse
     {
         public string OrderId { get; set; }
 
@@ -16,7 +14,7 @@ namespace Pizzeria.DTOs
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        public OrderResponseDTO(Order orderModel)
+        public OrderResponse(Order orderModel)
         {
             OrderId = orderModel.Id!;
             UserId = orderModel.UserId!;

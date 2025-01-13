@@ -1,4 +1,11 @@
 # How to Run
+
+### Important
+
+Make sure to fill in your values showcased in .env-template into a new .env
+
+### General
+
 This REST API Web Service Application uses docker and docker-compose for development and production purposes.
 Thus, you need to create a .env file based on the .env-template file you will find inside the project.
 

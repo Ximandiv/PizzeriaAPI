@@ -1,4 +1,4 @@
-﻿using Pizzeria.DTOs;
+using Pizzeria.DTOs.Orders;
 using System.ComponentModel.DataAnnotations;
 
 namespace Pizzeria.Database.Models
