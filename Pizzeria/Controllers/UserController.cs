@@ -4,13 +4,16 @@ using Pizzeria.Database.Models;
 using Pizzeria.DTOs;
 using Pizzeria.DTOs.Users;
 using Pizzeria.Services;
+using System.Security.Claims;
 
 namespace Pizzeria.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 public class UserController
-    (UserService userService, TokenService tokenService) 
+    (UserService userService,
+    TokenService tokenService,
+    ILogger<UserController> logger) 
     : ControllerBase
 {
     [HttpGet("list")]
@@ -24,6 +27,9 @@ public class UserController
         }
         catch (Exception ex)
         {
+            logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                            nameof(UserController), nameof(GetAll), DateTime.UtcNow, null, ex);
+
             ResultObject<Error> errorResponse = UserError.GetAll;
             return StatusCode(500, errorResponse);
         }
@@ -48,11 +54,42 @@ public class UserController
         }
         catch(Exception ex)
         {
+            logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                            nameof(UserController), nameof(GetById), DateTime.UtcNow, id, ex);
             ResultObject<Error> errorResponse = UserError.GetByEmail;
             return StatusCode(500, errorResponse);
         }
 
         if(user is null)
+            return NotFound();
+
+        ResultObject<UserResponse> response = user.ToResponse();
+
+        return Ok(response);
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> GetMe()
+    {
+        var authUserEmail = User.FindFirst(ClaimTypes.Email)?.Value;
+
+        if (string.IsNullOrEmpty(authUserEmail)) return Forbid();
+
+        User? user;
+        try
+        {
+            user = await userService.GetByEmail(authUserEmail);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                        nameof(UserController), nameof(GetMe), DateTime.UtcNow, authUserEmail, ex);
+            ResultObject<Error> userError = UserError.GetByEmail;
+            return StatusCode(500, userError);
+        }
+
+        if (user is null)
             return NotFound();
 
         ResultObject<UserResponse> response = user.ToResponse();
@@ -84,6 +121,8 @@ public class UserController
         }
         catch (Exception ex)
         {
+            logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                            nameof(UserController), nameof(LogIn), DateTime.UtcNow, loginModel, ex);
             ResultObject<Error> errorResponse = UserError.LogIn;
             return StatusCode(500, errorResponse);
         }
@@ -106,6 +145,8 @@ public class UserController
         }
         catch(Exception ex)
         {
+            logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                            nameof(UserController), nameof(Register), DateTime.UtcNow, model, ex);
             ResultObject<Error> errorResponse = UserError.Create;
             return StatusCode(500, errorResponse);
         }

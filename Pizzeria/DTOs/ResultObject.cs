@@ -14,10 +14,6 @@ namespace Pizzeria.DTOs
             WasSuccessful = wasSuccessful;
             Message = message;
         }
-        private ResultObject()
-        {
-            
-        }
 
         public static implicit operator ResultObject<T>(UserResponse message) => new ResultObject<T>(true, (T)(object)message);
         public static implicit operator ResultObject<T>(List<UserResponse> message) => new ResultObject<T>(true, (T)(object)message);

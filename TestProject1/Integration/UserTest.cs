@@ -4,9 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Pizzeria.Database;
 using Pizzeria.Database.Models;
-using Pizzeria.DTOs;
 using Pizzeria.DTOs.Users;
 using System.Text;
+using TestProject1.Responses;
 
 namespace TestProject1.Integration;
 
@@ -33,7 +33,7 @@ public class UserTest(PizzeriaWebAppFactory<Program> factory)
         };
         var loginResponse = await _client.SendAsync(loginRequest);
         var loginResponseBody = await loginResponse.Content.ReadAsStringAsync();
-        var responseObject = JsonConvert.DeserializeObject<ResultObject<string>>(loginResponseBody);
+        var responseObject = JsonConvert.DeserializeObject<TestResponseObject<string>>(loginResponseBody);
         var jwt = responseObject!.Message;
 
         var getRequest = new HttpRequestMessage(HttpMethod.Get, "/api/user/list");
@@ -44,13 +44,13 @@ public class UserTest(PizzeriaWebAppFactory<Program> factory)
         response.EnsureSuccessStatusCode();
         
         var responseBody = await response.Content.ReadAsStringAsync();
-        var result = JsonConvert.DeserializeObject<ResultObject<List<User>>>(responseBody);
+        var result = JsonConvert.DeserializeObject<TestResponseObject<List<User>>>(responseBody);
         
         int userCount = await context.Users.CountAsync();
 
         result.Should().NotBeNull();
         result!.Message.Should().NotBeNull();
-        result.Message.Count.Should().Be(userCount);
+        result.Message!.Count.Should().Be(userCount);
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public class UserTest(PizzeriaWebAppFactory<Program> factory)
         };
         var loginResponse = await _client.SendAsync(loginRequest);
         var loginResponseBody = await loginResponse.Content.ReadAsStringAsync();
-        var responseObject = JsonConvert.DeserializeObject<ResultObject<string>>(loginResponseBody);
+        var responseObject = JsonConvert.DeserializeObject<TestResponseObject<string>>(loginResponseBody);
         var jwt = responseObject!.Message;
 
         var getRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/user/{user!.Id}");
@@ -78,7 +78,7 @@ public class UserTest(PizzeriaWebAppFactory<Program> factory)
         response.EnsureSuccessStatusCode();
 
         var responseBody = await response.Content.ReadAsStringAsync();
-        var userResponse = JsonConvert.DeserializeObject<ResultObject<User>>(responseBody);
+        var userResponse = JsonConvert.DeserializeObject<TestResponseObject<User>>(responseBody);
 
         userResponse.Should().NotBeNull();
         userResponse!.Message.Should().NotBeNull();

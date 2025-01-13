@@ -51,9 +51,10 @@ public class UserServiceTest
 
         var result = await _service.GetAll();
 
+        result.Should().NotBeNull();
         result.Should().HaveCount(2);
 
-        var resultList = result.ToList();
+        var resultList = result!.ToList();
        
         for(int i = 0;  i < resultList.Count(); i++)
         {

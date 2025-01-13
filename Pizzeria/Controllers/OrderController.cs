@@ -13,16 +13,14 @@ namespace Pizzeria.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class OrderController : ControllerBase
+    public class OrderController
+        (OrdersContext ordersContext,
+        UserService userService,
+        ILogger<OrderController> logger): ControllerBase
     {
-        private readonly OrdersContext _ordersContext;
-        private readonly UserService _userService;
-
-        public OrderController(OrdersContext ordersContext, UserService userService)
-        {
-            _ordersContext = ordersContext;
-            _userService = userService;
-        }
+        private readonly OrdersContext _ordersContext = ordersContext;
+        private readonly UserService _userService = userService;
+        private readonly ILogger<OrderController> _logger = logger;
 
         [HttpGet("user/me")]
         [Authorize]
@@ -39,6 +37,8 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                            nameof(OrderController), nameof(GetAllFromMe), DateTime.UtcNow, authUserEmail, ex);
                 ResultObject<Error> userErrorResponse = UserError.GetByEmail;
                 return StatusCode(500, userErrorResponse);
             }
@@ -52,6 +52,8 @@ namespace Pizzeria.Controllers
             }
             catch(Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                            nameof(OrderController), nameof(GetAllFromMe), DateTime.UtcNow, user.Id, ex);
                 ResultObject<Error> orderErrorResponse = OrderError.GetAllFromUser;
                 return StatusCode(500, orderErrorResponse);
             }
@@ -78,6 +80,8 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                            nameof(OrderController), nameof(GetAllFromUser), DateTime.UtcNow, userId, ex);
                 ResultObject<Error> errorResponse = OrderError.GetAllFromUser;
                 return StatusCode(500, errorResponse);
             }
@@ -106,6 +110,8 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                            nameof(OrderController), nameof(GetOneFromMe), DateTime.UtcNow, authUserEmail, ex);
                 ResultObject<Error> userError = UserError.GetByEmail;
                 return StatusCode(500, userError);
             }
@@ -119,6 +125,8 @@ namespace Pizzeria.Controllers
             }
             catch(Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                            nameof(OrderController), nameof(GetOneFromMe), DateTime.UtcNow, orderId, ex);
                 ResultObject<Error> orderErrorResponse = OrderError.GetOneFromUser;
                 return StatusCode(500, orderErrorResponse);
             }
@@ -143,6 +151,8 @@ namespace Pizzeria.Controllers
             }
             catch(Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                            nameof(OrderController), nameof(GetOneFromUser), DateTime.UtcNow, new {orderId, userId}, ex);
                 ResultObject<Error> errorResponse = OrderError.GetOneFromUser;
                 return StatusCode(500, errorResponse);
             }
@@ -171,6 +181,8 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                            nameof(OrderController), nameof(CreateFromMe), DateTime.UtcNow, authUserEmail, ex);
                 ResultObject<Error> userError = UserError.GetByEmail;
                 return StatusCode(500, userError);
             }
@@ -198,8 +210,10 @@ namespace Pizzeria.Controllers
             {
                 await _ordersContext.Create(model);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                            nameof(OrderController), nameof(CreateFromMe), DateTime.UtcNow, order, ex);
                 ResultObject<Error> errorResponse = OrderError.Create;
                 return StatusCode(500, errorResponse);
             }
@@ -233,8 +247,10 @@ namespace Pizzeria.Controllers
             {
                 await _ordersContext.Create(model);
             }
-            catch(Exception)
+            catch(Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                            nameof(OrderController), nameof(Create), DateTime.UtcNow, order, ex);
                 ResultObject<Error> errorResponse = OrderError.Create;
                 return StatusCode(500, errorResponse);
             }
@@ -261,6 +277,8 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                            nameof(OrderController), nameof(CreateManyFromMe), DateTime.UtcNow, authUserEmail, ex);
                 ResultObject<Error> userError = UserError.GetByEmail;
                 return StatusCode(500, userError);
             }
@@ -298,12 +316,16 @@ namespace Pizzeria.Controllers
 
                 if (unsuccessfulInserts == modelList.Count)
                 {
+                    _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(CreateManyFromMe), DateTime.UtcNow, orderList, ex);
                     ResultObject<Error> unsuccessfulResponse = OrderError.Create;
                     return StatusCode(500, unsuccessfulInserts);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(CreateManyFromMe), DateTime.UtcNow, orderList, ex);
                 ResultObject<Error> errorResponse = OrderError.Create;
                 return StatusCode(500, errorResponse);
             }
@@ -360,12 +382,16 @@ namespace Pizzeria.Controllers
 
                 if (unsuccessfulInserts == modelList.Count)
                 {
+                    _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(CreateMany), DateTime.UtcNow, orderList, ex);
                     ResultObject<Error> noInsertsResponse = OrderError.Create;
                     return StatusCode(500, noInsertsResponse);
                 }
             }
-            catch(Exception)
+            catch(Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(CreateMany), DateTime.UtcNow, orderList, ex);
                 return StatusCode(500, OrderError.Create);
             }
 
@@ -402,6 +428,8 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(UpdateOneFromMe), DateTime.UtcNow, authUserEmail, ex);
                 ResultObject<Error> userError = UserError.GetByEmail;
                 return StatusCode(500, userError);
             }
@@ -440,8 +468,10 @@ namespace Pizzeria.Controllers
                     return BadRequest(invalidUpdate);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(UpdateOneFromMe), DateTime.UtcNow, new { order, orderId }, ex);
                 ResultObject<Error> updateError = OrderError.Update;
                 return StatusCode(500, updateError);
             }
@@ -488,8 +518,10 @@ namespace Pizzeria.Controllers
                     return BadRequest(invalidUpdate);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(UpdateOne), DateTime.UtcNow, new { order, orderId, userId}, ex);
                 ResultObject<Error> updateError = OrderError.Update;
                 return StatusCode(500, updateError);
             }
@@ -515,6 +547,8 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(UpdateManyFromMe), DateTime.UtcNow, authUserEmail, ex);
                 ResultObject<Error> userError = UserError.GetByEmail;
                 return StatusCode(500, userError);
             }
@@ -571,8 +605,10 @@ namespace Pizzeria.Controllers
                     return BadRequest(invalidResponse);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(UpdateManyFromMe), DateTime.UtcNow, orderUpdateList, ex);
                 ResultObject<Error> updateError = OrderError.Update;
                 return StatusCode(500, updateError);
             }
@@ -637,8 +673,10 @@ namespace Pizzeria.Controllers
                     return BadRequest(invalidResponse);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(UpdateMany), DateTime.UtcNow, new { orderUpdateList, userId }, ex);
                 ResultObject<Error> updateError = OrderError.Update;
                 return StatusCode(500, updateError);
             }
@@ -664,6 +702,8 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(DeleteOneFromMe), DateTime.UtcNow, authUserEmail, ex);
                 ResultObject<Error> userError = UserError.GetByEmail;
                 return StatusCode(500, userError);
             }
@@ -677,6 +717,8 @@ namespace Pizzeria.Controllers
             }
             catch(Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(DeleteOneFromMe), DateTime.UtcNow, orderId, ex);
                 ResultObject<Error> deleteResponse = OrderError.Delete;
                 return StatusCode(500, deleteResponse);
             }
@@ -707,6 +749,8 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(DeleteOne), DateTime.UtcNow, new { orderId, userId }, ex);
                 ResultObject<Error> deleteError = OrderError.Delete;
                 return StatusCode(500, deleteError);
             }
@@ -735,6 +779,8 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(DeleteManyFromMe), DateTime.UtcNow, authUserEmail, ex);
                 ResultObject<Error> userError = UserError.GetByEmail;
                 return StatusCode(500, userError);
             }
@@ -762,6 +808,8 @@ namespace Pizzeria.Controllers
             }
             catch(Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(DeleteManyFromMe), DateTime.UtcNow, orderId, ex);
                 ResultObject<Error> deleteError = OrderError.Delete;
                 return StatusCode(500, deleteError);
             }
@@ -800,6 +848,8 @@ namespace Pizzeria.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError("Error in {Controller} with method {Method} at {Time} with properties {@Props} because {@Exception}",
+                           nameof(OrderController), nameof(DeleteMany), DateTime.UtcNow, new { orderId, userId }, ex);
                 ResultObject<Error> deleteError = OrderError.Delete;
                 return StatusCode(500, deleteError);
             }
