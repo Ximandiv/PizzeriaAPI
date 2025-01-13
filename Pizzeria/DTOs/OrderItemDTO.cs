@@ -1,9 +1,9 @@
-using Pizzeria.DTOs.Orders;
+﻿using Pizzeria.Database.Models;
 using System.ComponentModel.DataAnnotations;
 
-namespace Pizzeria.Database.Models
+namespace Pizzeria.DTOs
 {
-    public class OrderItem
+    public class OrderItemDTO
     {
         [StringLength(50)]
         public required string Name { get; set; }
@@ -12,8 +12,8 @@ namespace Pizzeria.Database.Models
         [Range(1, 9999.99)]
         public decimal Price { get; set; } = 0;
 
-        public OrderItemDTO ToDTO()
-            => new OrderItemDTO()
+        public OrderItem ToModel()
+            => new OrderItem()
             {
                 Name = Name,
                 Price = Price

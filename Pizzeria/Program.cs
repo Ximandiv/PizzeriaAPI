@@ -36,7 +36,6 @@ builder.Services.AddSingleton<IMongoClient>(serviceProvider =>
 
     var pack = new ConventionPack { new CamelCaseElementNameConvention() };
     ConventionRegistry.Register("elementNameConvention", pack, x => true);
-
     return new MongoClient(settings.ConnectionString);
 });
 
