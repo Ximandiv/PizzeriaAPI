@@ -1,2 +1,0 @@
-2025-01-13 09:33:35.111 -05:00 [INF] HTTP POST /api/User/login responded 200 in 847.8682 ms
-2025-01-13 09:33:47.751 -05:00 [INF] HTTP POST /api/User/login responded 200 in 332.2871 ms
