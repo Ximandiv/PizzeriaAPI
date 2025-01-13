@@ -36,7 +36,11 @@ internal static class UserSeeder
         {
             var userRole = new UserRoles();
             userRole.UserId = user.Id;
-            userRole.RoleId = 1;
+
+            if(user.Email != "admin@test.com")
+                userRole.RoleId = 1;
+            else
+                userRole.RoleId = 2;
 
             userRoleList.Add(userRole);
         }

@@ -1,4 +1,3 @@
-using BCrypt.Net;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,6 +5,8 @@ using Newtonsoft.Json;
 using Pizzeria.Database;
 using Pizzeria.Database.Models;
 using Pizzeria.DTOs;
+using Pizzeria.DTOs.Users;
+using System.Text;
 
 namespace TestProject1.Integration;
 
@@ -14,19 +15,36 @@ public class UserTest(PizzeriaWebAppFactory<Program> factory)
     : IClassFixture<PizzeriaWebAppFactory<Program>>
 {
     private readonly HttpClient _client = factory.GetAppClient();
+    private readonly LoginDTO _loginDTO = new()
+    {
+        Email = "admin@test.com",
+        Password = "123456789!@Abc"
+    };
 
     [Fact]
     public async Task Should_Get_All_With_Correct_Amount()
     {
-        var response = await _client.GetAsync("/api/user/list");
+        using var scope = factory.Server.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<PizzeriaContext>();
+
+        var loginRequest = new HttpRequestMessage(HttpMethod.Post, "/api/user/login")
+        {
+            Content = new StringContent(JsonConvert.SerializeObject(_loginDTO), Encoding.UTF8, "application/json"),
+        };
+        var loginResponse = await _client.SendAsync(loginRequest);
+        var loginResponseBody = await loginResponse.Content.ReadAsStringAsync();
+        var responseObject = JsonConvert.DeserializeObject<ResultObject<string>>(loginResponseBody);
+        var jwt = responseObject!.Message;
+
+        var getRequest = new HttpRequestMessage(HttpMethod.Get, "/api/user/list");
+        getRequest.Headers.Add("Authorization", $"Bearer {jwt}");
+
+        var response = await _client.SendAsync(getRequest);
         
         response.EnsureSuccessStatusCode();
         
         var responseBody = await response.Content.ReadAsStringAsync();
         var result = JsonConvert.DeserializeObject<ResultObject<List<User>>>(responseBody);
-        
-        using var scope = factory.Server.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<PizzeriaContext>();
         
         int userCount = await context.Users.CountAsync();
 
@@ -41,19 +59,21 @@ public class UserTest(PizzeriaWebAppFactory<Program> factory)
         using var scope = factory.Server.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<PizzeriaContext>();
 
-        User? user = new() 
-        { 
-            Name = "UniqueUserTest", 
-            Email = "test@email.com", 
-            Password = BCrypt.Net.BCrypt.HashPassword("eQuisde12345#"),
-            Phone = "123 4567 891",
-            Address = "Street Test # Test - Test"
-        };
-        await context.Users.AddAsync(user);
-        await context.SaveChangesAsync();
-        user = await context.Users.FirstOrDefaultAsync(u => u.Name == user.Name);
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == 1);
 
-        var response = await _client.GetAsync($"/api/user/{user!.Id}");
+        var loginRequest = new HttpRequestMessage(HttpMethod.Post, "/api/user/login")
+        {
+            Content = new StringContent(JsonConvert.SerializeObject(_loginDTO), Encoding.UTF8, "application/json"),
+        };
+        var loginResponse = await _client.SendAsync(loginRequest);
+        var loginResponseBody = await loginResponse.Content.ReadAsStringAsync();
+        var responseObject = JsonConvert.DeserializeObject<ResultObject<string>>(loginResponseBody);
+        var jwt = responseObject!.Message;
+
+        var getRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/user/{user!.Id}");
+        getRequest.Headers.Add("Authorization", $"Bearer {jwt}");
+
+        var response = await _client.SendAsync(getRequest);
 
         response.EnsureSuccessStatusCode();
 
@@ -62,6 +82,6 @@ public class UserTest(PizzeriaWebAppFactory<Program> factory)
 
         userResponse.Should().NotBeNull();
         userResponse!.Message.Should().NotBeNull();
-        userResponse.Message.Should().BeEquivalentTo(user);
+        userResponse.Message.Should().BeEquivalentTo(user.ToResponse());
     }
 }

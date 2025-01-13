@@ -80,7 +80,7 @@ public class PizzeriaWebAppFactory<TProgram>
                                 }
 
                                 TestContextSeeder testSeeder = new TestContextSeeder(dbContext);
-                                testSeeder.Seed();
+                                testSeeder.Seed().GetAwaiter().GetResult();
                             }
                         }
                         catch (Exception ex)
